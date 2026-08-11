@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Absensi Guru</title>
+<link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo"><img src="static/img/logo.png" alt="Logo Sekolah"></div>
+    <div class="sidebar-info">
+      <span class="sidebar-title" id="sidebarUnit">Absensi Guru</span>
+      <span class="sidebar-sub" id="sidebarUser">-</span>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a class="nav-item active" href="#" onclick="showPage('absensi')">
+      <span class="nav-icon">📋</span> Data Absensi
+    </a>
+    <a class="nav-item" href="#" onclick="showPage('guru')">
+      <span class="nav-icon">👤</span> Guru & QR
+    </a>
+    <a class="nav-item" href="#" onclick="showPage('rekap')">
+      <span class="nav-icon">📊</span> Rekap
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <button class="btn-logout" onclick="logout()">🚪 Keluar</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main" id="main">
+  <!-- Topbar -->
+  <header class="topbar">
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="topbar-title" id="pageTitle">Data Absensi</div>
+    <div class="topbar-actions">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Ganti tema">🌙</button>
+    </div>
+  </header>
+
+  <!-- PAGE: Absensi -->
+  <section class="page active" id="page-absensi">
+    <div class="page-header">
+      <div>
+        <h2 id="unitTitle">Absensi Guru</h2>
+        <p class="page-sub" id="todayDate"></p>
+      </div>
+      <div class="page-actions">
+        <input type="date" id="filterTgl" class="input-date" onchange="loadAbsensi()">
+        <button class="btn-success" onclick="exportExcel()">📥 Export Excel</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card">
+        <div class="stat-num" id="statTotal">-</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-card hadir">
+        <div class="stat-num" id="statHadir">-</div>
+        <div class="stat-label">Hadir</div>
+      </div>
+      <div class="stat-card izin">
+        <div class="stat-num" id="statIzin">-</div>
+        <div class="stat-label">Izin</div>
+      </div>
+      <div class="stat-card sakit">
+        <div class="stat-num" id="statSakit">-</div>
+        <div class="stat-label">Sakit</div>
+      </div>
+    </div>
+
+    <!-- Toolbar delete mode -->
+    <div class="delete-toolbar" id="deleteToolbar" style="display:none">
+      <button class="btn-cancel-sel" onclick="cancelSelect()">✕ Batal</button>
+      <span id="selectedCount">0 dipilih</span>
+      <button class="btn-select-all" onclick="selectAll()">☑ Pilih Semua</button>
+      <button class="btn-delete-sel" onclick="deleteSelected()">🗑 Hapus</button>
+    </div>
+
+    <!-- Tabel -->
+    <div class="table-wrap">
+      <table class="data-table" id="absensiTable">
+        <thead>
+          <tr>
+            <th class="col-check"></th>
+            <th>Tanggal</th>
+            <th>Jam</th>
+            <th>Nama Guru</th>
+            <th>Mata Pelajaran</th>
+            <th>Unit</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="absensiBody">
+          <tr><td colspan="7" class="empty-msg">Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PAGE: Guru & QR -->
+  <section class="page" id="page-guru">
+    <div class="page-header">
+      <div>
+        <h2>Guru & QR</h2>
+        <p class="page-sub">Tambah guru, lalu kirim QR ke masing-masing guru.</p>
+      </div>
+    </div>
+
+    <div class="page-actions" style="margin-bottom:16px;gap:8px;flex-wrap:wrap">
+      <input type="text" id="gNama" class="input-date" placeholder="Nama lengkap" style="width:200px">
+      <input type="text" id="gMapel" class="input-date" placeholder="Mata pelajaran" style="width:160px">
+      <select id="gUnit" class="input-date" style="width:auto">
+        <option value="MI">MI</option>
+        <option value="MTs">MTs</option>
+        <option value="RA">RA</option>
+      </select>
+      <input type="text" id="gJabatan" class="input-date" placeholder="Jabatan (opsional)" style="width:160px">
+      <button class="btn-success" onclick="addGuru()">+ Tambah</button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data-table" id="guruTable">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Mapel</th>
+            <th>Unit</th>
+            <th>Jabatan</th>
+            <th>QR</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="guruBody">
+          <tr><td colspan="6" class="empty-msg">Memuat...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PAGE: Rekap -->
+  <section class="page" id="page-rekap">
+    <div class="page-header">
+      <div>
+        <h2>Rekap Absensi</h2>
+        <p class="page-sub" id="rekapRange">Pilih rentang tanggal untuk melihat rekap.</p>
+      </div>
+      <div class="page-actions">
+        <input type="date" id="rekapStart" class="input-date">
+        <input type="date" id="rekapEnd" class="input-date">
+        <button class="btn-secondary" onclick="loadRekap()">Tampilkan</button>
+        <button class="btn-success" onclick="exportRekap()">📥 Export Rekap</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table" id="rekapTable">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama Guru</th>
+            <th>Mata Pelajaran</th>
+            <th>Unit</th>
+            <th>Hadir</th>
+            <th>Izin</th>
+            <th>Sakit</th>
+            <th>Total</th>
+            <th>Kehadiran</th>
+          </tr>
+        </thead>
+        <tbody id="rekapBody">
+          <tr><td colspan="9" class="empty-msg">Pilih rentang tanggal lalu klik "Tampilkan".</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="static/js/app.js"></script>
+</body>
+</html>
