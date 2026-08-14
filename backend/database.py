@@ -147,6 +147,7 @@ def seed_admin():
         ("admin_mi",  os.getenv("ADMIN_MI_PASS",  ""), "MI"),
         ("admin_mts", os.getenv("ADMIN_MTS_PASS", ""), "MTs"),
         ("admin_ra",  os.getenv("ADMIN_RA_PASS",  ""), "RA"),
+        ("admin",     os.getenv("ADMIN_PASS", "admin"), "ALL"),
     ]
 
     conn = get_conn()
