@@ -67,6 +67,14 @@ Dashboard bisa diakses di: **http://localhost:8000**
 # Tutup dengan stop_all.bat.
 ```
 
+### 6. Jalankan satu-klik via tunnel (untuk akses dari HP/Internet)
+```powershell
+cd C:\Users\Suran\absensi-murid
+.\start_jumat.bat
+```
+Script otomatis: buka server + Cloudflare tunnel gratis → update `.env` → tampilkan URL publik.
+Tiap start URL berubah, jadi **generate ulang QR murid** setelahnya.
+
 ---
 
 ## 🔐 Akun Admin
