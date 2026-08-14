@@ -10,6 +10,12 @@ $CfExe = "C:\Program Files (x86)\cloudflared\cloudflared.exe"
 $CfLog = Join-Path $env:TEMP "opencode\cf_jumat.err"
 $SrvLog = Join-Path $env:TEMP "opencode\serve_jumat.err"
 
+# 0. Setup awal: buat .env dari template kalau belum ada
+if (-not (Test-Path $EnvFile)) {
+    Copy-Item (Join-Path $Root ".env.example") $EnvFile
+    Write-Host "[0/5] .env dibuat dari .env.example (atur SECRET_KEY & password admin dulu)" -ForegroundColor Yellow
+}
+
 Write-Host "=== ABSENSI MURID - START ===" -ForegroundColor Cyan
 
 # 1. Stop proses lama
