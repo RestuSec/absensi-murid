@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Absensi Murid</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin:0; padding:16px;
+         background:#0f172a; color:#f1f5f9; min-height:100vh; }
+  .card { background:#1e293b; max-width:420px; margin:24px auto; padding:24px; border-radius:16px;
+          text-align:center; box-shadow:0 4px 20px rgba(0,0,0,.4); }
+  h1 { font-size:20px; margin:0 0 4px; }
+  p.sub { color:#94a3b8; font-size:13px; margin:0 0 20px; }
+  .who { background:#334155; border-radius:12px; padding:14px; margin-bottom:18px; }
+  .who .nm { font-size:18px; font-weight:bold; }
+  .who .dt { color:#94a3b8; font-size:13px; margin-top:4px; }
+  button { width:100%; padding:15px; font-size:16px; font-weight:bold; border-radius:10px;
+        border:none; margin-bottom:10px; cursor:pointer; color:#fff; }
+  #hadir { background:#22c55e; } #izin { background:#f59e0b; } #sakit { background:#ef4444; }
+  #loc { font-size:13px; color:#94a3b8; margin:12px 0; }
+  #result { margin-top:12px; padding:12px; border-radius:10px; font-size:15px; display:none;
+        white-space:pre-line; }
+  .ok { background:#14532d; } .err { background:#7f1d1d; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>🏫 Absensi Murid</h1>
+    <p class="sub">Pilih status kehadiran kamu hari ini</p>
+    <div id="who" class="who" style="display:none">
+      <div class="nm" id="nm"></div>
+      <div class="dt" id="dt"></div>
+    </div>
+    <button id="hadir">✅ Hadir</button>
+    <button id="izin">📋 Izin</button>
+    <button id="sakit">🏥 Sakit</button>
+    <div id="confirm" style="display:none">
+      <div id="confirmMsg" style="font-size:17px;font-weight:bold;margin:10px 0 14px"></div>
+      <button id="kirim" style="background:#2563eb">📤 Kirim</button>
+      <button id="batal" style="background:#475569">Batal</button>
+    </div>
+    <div id="loc"></div>
+    <div id="result"></div>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+const t = new URLSearchParams(location.search).get('t');
+let lat = null, lon = null, info = null;
+
+async function init(){
+  if(!t){ $('result').className='err'; $('result').style.display='block';
+          $('result').textContent='QR tidak valid. Hubungi admin.'; return; }
+  try{
+    const r = await fetch(`/api/absen/info/${t}`);
+    if(!r.ok) throw new Error('QR tidak valid');
+    info = await r.json();
+    $('nm').textContent = info.nama;
+    $('dt').textContent = [info.kelas, info.unit].filter(Boolean).join(' · ');
+    $('who').style.display = 'block';
+    getLoc();
+  }catch(e){ $('result').className='err'; $('result').style.display='block';
+             $('result').textContent=e.message; }
+}
+
+function getLoc(){
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(p=>{
+    lat=p.coords.latitude; lon=p.coords.longitude;
+    $('loc').textContent=`📍 ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+  }, ()=>{}); // gagal ambil lokasi → tetap kirim tanpa lokasi, tanpa peringatan
+}
+
+async function absen(status){
+  const fd = new FormData();
+  fd.append('token', t);
+  fd.append('status', status);
+  if(lat!==null){ fd.append('latitude',lat); fd.append('longitude',lon); }
+  const r = await fetch('/api/absen-web',{method:'POST',body:fd});
+  const j = await r.json();
+  if(!r.ok) return show('err', j.detail||'Gagal');
+  const emoji = {Hadir:'✅',Izin:'📋',Sakit:'🏥'}[j.status];
+  show('ok', `${emoji} Absen ${j.status} berhasil!\n${j.nama}\nJam ${j.jam} - ${j.tanggal}`);
+}
+
+function show(type,msg){
+  $('result').className = type;
+  $('result').textContent = msg;
+  $('result').style.display = 'block';
+}
+
+let pending = null;
+const statusBtn = ['hadir','izin','sakit'];
+function ask(status){
+  pending = status;
+  const emoji = {Hadir:'✅',Izin:'📋',Sakit:'🏥'}[status];
+  $('confirmMsg').textContent = `Absen ${emoji} ${status}?`;
+  statusBtn.forEach(id => $(id).style.display = 'none');
+  $('confirm').style.display = 'block';
+  $('result').style.display = 'none';
+}
+$('hadir').onclick=()=>ask('Hadir');
+$('izin').onclick=()=>ask('Izin');
+$('sakit').onclick=()=>ask('Sakit');
+$('batal').onclick=()=>{
+  pending = null;
+  $('confirm').style.display = 'none';
+  statusBtn.forEach(id => $(id).style.display = '');
+};
+$('kirim').onclick=()=>{ if(pending) absen(pending); };
+init();
+</script>
+</body>
+</html>

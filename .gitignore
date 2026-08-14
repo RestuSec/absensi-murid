@@ -1,0 +1,26 @@
+# Secret & konfigurasi lokal
+.env
+
+# Database & data pengguna
+*.db
+backend/absensi.db
+
+# Log
+logs/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Script lama yang berisi token
+fix_token.py
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+ngrok.yml
