@@ -224,6 +224,7 @@ def list_murid(payload: dict = Depends(verify_token)):
 
 @app.post("/api/murid")
 def create_murid(data: MuridIn, payload: dict = Depends(verify_token)):
+    data.unit = payload["unit"] if payload["unit"] != "ALL" else data.unit
     if data.unit not in VALID_UNITS or data.unit == "ALL":
         raise HTTPException(status_code=400, detail="Unit tidak valid")
     conn = get_conn()
@@ -748,7 +749,8 @@ def create_nilai(data: NilaiIn, payload: dict = Depends(verify_token)):
         raise HTTPException(status_code=400, detail="Nilai harus 0-100")
     conn = get_conn()
     cur  = conn.cursor()
-    cur.execute("SELECT id FROM murid WHERE id = ?", (data.murid_id,))
+    cur.execute("SELECT id FROM murid WHERE id = ? AND (unit = ? OR ? = 'ALL')",
+                (data.murid_id, payload["unit"], payload["unit"]))
     if not cur.fetchone():
         conn.close()
         raise HTTPException(status_code=404, detail="Murid tidak ditemukan")

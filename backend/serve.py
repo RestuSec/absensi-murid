@@ -3,6 +3,7 @@ Jalankan ini untuk serve backend + dashboard sekaligus.
 FastAPI akan serve dashboard di root (/), API di /api/
 """
 import os
+from fastapi import HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from main import app
@@ -34,6 +35,8 @@ def serve_absen():
 
 @app.get("/{filename}.html", include_in_schema=False)
 def serve_html(filename: str):
+    if "/" in filename or "\\" in filename or filename in (".", ".."):
+        raise HTTPException(status_code=404, detail="Not Found")
     path = os.path.join(DASHBOARD_DIR, f"{filename}.html")
     if os.path.exists(path):
         return FileResponse(path)
