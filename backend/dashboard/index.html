@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Absensi Murid</title>
-<link rel="stylesheet" href="static/css/style.css">
+<link rel="stylesheet" href="static/css/style.css?v=6">
 </head>
 <body>
 
@@ -13,7 +13,7 @@
   <div class="sidebar-header">
     <div class="sidebar-logo"><img src="static/img/logo.png" alt="Logo Sekolah"></div>
     <div class="sidebar-info">
-      <span class="sidebar-title" id="sidebarUnit">Absensi Murid</span>
+      <span class="sidebar-title">RestuSec</span>
       <span class="sidebar-sub" id="sidebarUser">-</span>
     </div>
   </div>
@@ -27,11 +27,18 @@
     <a class="nav-item" href="#" onclick="showPage('rekap')">
       <span class="nav-icon">📊</span> Rekap
     </a>
+    <a class="nav-item" href="#" onclick="showPage('materi')">
+      <span class="nav-icon">📚</span> Materi
+    </a>
+    <a class="nav-item" href="#" onclick="showPage('nilai')">
+      <span class="nav-icon">🎓</span> Nilai
+    </a>
   </nav>
   <div class="sidebar-footer">
     <button class="btn-logout" onclick="logout()">🚪 Keluar</button>
   </div>
 </aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()" role="button" aria-label="Tutup menu"></div>
 
 <!-- MAIN -->
 <main class="main" id="main">
@@ -48,7 +55,7 @@
   <section class="page active" id="page-absensi">
     <div class="page-header">
       <div>
-        <h2 id="unitTitle">Absensi Murid</h2>
+        <h2 id="unitTitle">RestuSec — Absensi Murid</h2>
         <p class="page-sub" id="todayDate"></p>
       </div>
       <div class="page-actions">
@@ -95,12 +102,11 @@
             <th>Jam</th>
             <th>Nama Murid</th>
             <th>Kelas</th>
-            <th>Unit</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody id="absensiBody">
-          <tr><td colspan="7" class="empty-msg">Memuat data...</td></tr>
+          <tr><td colspan="6" class="empty-msg">Memuat data...</td></tr>
         </tbody>
       </table>
     </div>
@@ -119,11 +125,6 @@
       <input type="number" id="mUrutan" class="input-date" placeholder="Urutan" style="width:90px">
       <input type="text" id="mNama" class="input-date" placeholder="Nama lengkap" style="width:200px">
       <input type="text" id="mKelas" class="input-date" placeholder="Kelas" style="width:100px">
-      <select id="mUnit" class="input-date" style="width:auto">
-        <option value="MI">MI</option>
-        <option value="MTs">MTs</option>
-        <option value="RA">RA</option>
-      </select>
       <button class="btn-success" onclick="addMurid()">+ Tambah</button>
     </div>
 
@@ -134,13 +135,12 @@
             <th>Urutan</th>
             <th>Nama</th>
             <th>Kelas</th>
-            <th>Unit</th>
             <th>QR</th>
             <th>Aksi</th>
           </tr>
         </thead>
         <tbody id="muridBody">
-          <tr><td colspan="6" class="empty-msg">Memuat...</td></tr>
+          <tr><td colspan="5" class="empty-msg">Memuat...</td></tr>
         </tbody>
       </table>
     </div>
@@ -167,7 +167,6 @@
             <th>No</th>
             <th>Nama Murid</th>
             <th>Kelas</th>
-            <th>Unit</th>
             <th>Hadir</th>
             <th>Izin</th>
             <th>Sakit</th>
@@ -176,7 +175,86 @@
           </tr>
         </thead>
         <tbody id="rekapBody">
-          <tr><td colspan="9" class="empty-msg">Pilih rentang tanggal lalu klik "Tampilkan".</td></tr>
+          <tr><td colspan="8" class="empty-msg">Pilih rentang tanggal lalu klik "Tampilkan".</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PAGE: Materi -->
+  <section class="page" id="page-materi">
+    <div class="page-header">
+      <div>
+        <h2>Materi</h2>
+        <p class="page-sub">Isi materi pelajaran untuk murid.</p>
+      </div>
+    </div>
+    <div class="page-actions" style="margin-bottom:16px;gap:8px;flex-wrap:wrap">
+      <input type="text" id="mJudul" class="input-date" placeholder="Judul materi" style="width:220px">
+      <input type="text" id="mIsi" class="input-date" placeholder="Isi / link / deskripsi" style="flex:1;min-width:180px">
+      <button class="btn-success" onclick="addMateri()">+ Simpan</button>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table" id="materiTable">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Judul</th>
+            <th>Isi</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="materiBody">
+          <tr><td colspan="4" class="empty-msg">Belum ada materi.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PAGE: Nilai -->
+  <section class="page" id="page-nilai">
+    <div class="page-header">
+      <div>
+        <h2>Nilai</h2>
+        <p class="page-sub">Input nilai & lihat rata-rata tiap murid.</p>
+      </div>
+    </div>
+    <div class="page-actions" style="margin-bottom:16px;gap:8px;flex-wrap:wrap">
+      <select id="nMurid" class="input-date" style="width:auto"><option value="">Pilih murid…</option></select>
+      <input type="text" id="nMapel" class="input-date" placeholder="Mapel" style="width:120px">
+      <input type="number" id="nNilai" class="input-date" placeholder="Nilai 0-100" style="width:100px" min="0" max="100">
+      <button class="btn-success" onclick="addNilai()">+ Simpan</button>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table" id="nilaiTable">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Murid</th>
+            <th>Mapel</th>
+            <th>Nilai</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="nilaiBody">
+          <tr><td colspan="5" class="empty-msg">Belum ada nilai.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3 style="margin:18px 0 8px">Rata-rata Nilai per Murid</h3>
+    <div class="table-wrap">
+      <table class="data-table" id="rataTable">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama Murid</th>
+            <th>Kelas</th>
+            <th>Jumlah Nilai</th>
+            <th>Rata-rata</th>
+          </tr>
+        </thead>
+        <tbody id="rataBody">
+          <tr><td colspan="5" class="empty-msg">Belum ada data.</td></tr>
         </tbody>
       </table>
     </div>
@@ -186,6 +264,6 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="static/js/app.js"></script>
+<script src="static/js/app.js?v=6"></script>
 </body>
 </html>

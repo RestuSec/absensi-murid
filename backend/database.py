@@ -135,6 +135,31 @@ def init_db():
         )
     """)
 
+    # Tabel materi (diisi guru)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS materi (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            judul TEXT NOT NULL,
+            isi TEXT NOT NULL,
+            tanggal TEXT NOT NULL,
+            created_by TEXT,
+            created_at TEXT DEFAULT (datetime('now', 'localtime'))
+        )
+    """)
+
+    # Tabel nilai (diisi guru)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS nilai (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            murid_id INTEGER NOT NULL,
+            mapel TEXT NOT NULL,
+            nilai REAL NOT NULL,
+            tanggal TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now', 'localtime')),
+            FOREIGN KEY (murid_id) REFERENCES murid(id)
+        )
+    """)
+
     conn.commit()
     conn.close()
     print("[DB] Database initialized.")

@@ -27,13 +27,9 @@ function updateThemeBtn() {
 
 /* ── Init ── */
 window.addEventListener('DOMContentLoaded', () => {
-  // Set info unit
-  const unitLabels = { MI: 'Absensi Murid MI', MTs: 'Absensi Murid MTs', RA: 'Absensi Murid RA', ALL: 'Semua Unit' };
-  const unitLabel  = unitLabels[unit] || 'Absensi Murid';
-
-  document.getElementById('sidebarUnit').textContent = unitLabel;
+  // Set info
   document.getElementById('sidebarUser').textContent  = username || '-';
-  document.getElementById('unitTitle').textContent    = unitLabel;
+  document.getElementById('unitTitle').textContent    = 'RestuSec — Absensi Murid';
   document.getElementById('pageTitle').textContent    = 'Data Absensi';
 
   // Set tanggal hari ini
@@ -56,13 +52,23 @@ function showPage(page) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
   event.currentTarget.classList.add('active');
-  const titles = { absensi: 'Data Absensi', murid: 'Murid & QR', rekap: 'Rekap' };
+  const titles = { absensi: 'Data Absensi', murid: 'Murid & QR', rekap: 'Rekap', materi: 'Materi', nilai: 'Nilai' };
   document.getElementById('pageTitle').textContent = titles[page] || 'Absensi';
   if (page === 'murid') loadMurid();
+  if (page === 'materi') loadMateri();
+  if (page === 'nilai') { loadMuridOptions(); loadNilai(); loadRata2(); }
+  closeSidebar();
 }
 
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
+  const s = document.getElementById('sidebar');
+  s.classList.toggle('open');
+  document.getElementById('sidebarBackdrop').classList.toggle('show', s.classList.contains('open'));
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
 }
 
 /* ── API Helper ── */
@@ -104,7 +110,6 @@ function renderTable(data) {
       <td>${esc(row.jam)}</td>
       <td><strong>${esc(row.nama)}</strong></td>
       <td>${esc(row.kelas)}</td>
-      <td><span style="font-size:11px;background:var(--surface2);padding:2px 8px;border-radius:4px;border:1px solid var(--border)">${esc(row.unit)}</span></td>
       <td>${badgeStatus(row.status)}</td>
     </tr>
   `).join('');
@@ -287,7 +292,6 @@ function renderRekap(data) {
         <td>${i + 1}</td>
         <td><strong>${esc(r.nama)}</strong></td>
         <td>${esc(r.kelas)}</td>
-        <td><span style="font-size:11px;background:var(--surface2);padding:2px 8px;border-radius:4px;border:1px solid var(--border)">${esc(r.unit)}</span></td>
         <td><span class="badge badge-hadir">✅ ${r.hadir}</span></td>
         <td><span class="badge badge-izin">📋 ${r.izin}</span></td>
         <td><span class="badge badge-sakit">🏥 ${r.sakit}</span></td>
@@ -336,7 +340,7 @@ async function loadMurid() {
   const data = await res.json();
   const body = document.getElementById('muridBody');
   if (!data.length) {
-    body.innerHTML = '<tr><td colspan="6" class="empty-msg">📭 Belum ada murid. Tambah di atas.</td></tr>';
+    body.innerHTML = '<tr><td colspan="5" class="empty-msg">📭 Belum ada murid. Tambah di atas.</td></tr>';
     return;
   }
   body.innerHTML = data.map(m => `
@@ -344,7 +348,6 @@ async function loadMurid() {
       <td><strong>${esc(m.urutan || '-')}</strong></td>
       <td><strong>${esc(m.nama)}</strong></td>
       <td>${esc(m.kelas)}</td>
-      <td><span style="font-size:11px;background:var(--surface2);padding:2px 8px;border-radius:4px;border:1px solid var(--border)">${esc(m.unit)}</span></td>
       <td><a class="link-maps" href="#" data-id="${m.id}" data-nama="${esc(m.nama)}" data-token="${esc(m.token)}" onclick="showQR(event, this)">📱 Tampilkan</a></td>
       <td><a class="link-maps" href="#" data-id="${m.id}" data-nama="${esc(m.nama)}" onclick="resetToken(event, this)" title="Buat token baru">🔄</a>
           <a class="link-maps" href="#" data-id="${m.id}" data-nama="${esc(m.nama)}" onclick="delMurid(event, this)">🗑</a></td>
@@ -354,14 +357,13 @@ async function loadMurid() {
 async function addMurid() {
   const nama   = document.getElementById('mNama').value.trim();
   const kelas  = document.getElementById('mKelas').value.trim();
-  const unit   = document.getElementById('mUnit').value;
   const urutan = parseInt(document.getElementById('mUrutan').value, 10) || 0;
   if (!nama || !kelas) { showToast('Isi nama & kelas dulu'); return; }
 
   const res = await apiFetch('/api/murid', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nama, kelas, unit, urutan }),
+    body: JSON.stringify({ nama, kelas, unit: 'MI', urutan }),
   });
   if (res && res.ok) {
     showToast('✅ Murid ditambahkan');
@@ -436,6 +438,123 @@ function logout() {
   localStorage.removeItem('unit');
   localStorage.removeItem('username');
   window.location.href = 'login.html';
+}
+
+/* ── Materi ── */
+async function loadMateri() {
+  const res = await apiFetch('/api/materi');
+  if (!res) return;
+  const data = await res.json();
+  const body = document.getElementById('materiBody');
+  if (!data.length) { body.innerHTML = '<tr><td colspan="4" class="empty-msg">Belum ada materi.</td></tr>'; return; }
+  body.innerHTML = data.map(m => `
+    <tr>
+      <td>${esc(m.tanggal)}</td>
+      <td><strong>${esc(m.judul)}</strong></td>
+      <td style="white-space:pre-wrap">${esc(m.isi)}</td>
+      <td><a class="link-maps" href="#" data-id="${m.id}" onclick="delMateri(event, this)">🗑</a></td>
+    </tr>`).join('');
+}
+
+async function addMateri() {
+  const judul = document.getElementById('mJudul').value.trim();
+  const isi   = document.getElementById('mIsi').value.trim();
+  if (!judul || !isi) { showToast('Isi judul & isi materi dulu'); return; }
+  const res = await apiFetch('/api/materi', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ judul, isi }),
+  });
+  if (res && res.ok) {
+    showToast('✅ Materi disimpan');
+    document.getElementById('mJudul').value = '';
+    document.getElementById('mIsi').value = '';
+    loadMateri();
+  } else showToast('❌ Gagal menyimpan materi');
+}
+
+async function delMateri(e, el) {
+  e.preventDefault();
+  if (!confirm('Hapus materi ini?')) return;
+  const res = await apiFetch(`/api/materi/${el.dataset.id}`, { method: 'DELETE' });
+  if (res && res.ok) { showToast('✅ Materi dihapus'); loadMateri(); }
+  else showToast('❌ Gagal menghapus');
+}
+
+/* ── Nilai ── */
+async function loadMuridOptions() {
+  const res = await apiFetch('/api/murid');
+  if (!res) return;
+  const data = await res.json();
+  const sel = document.getElementById('nMurid');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">Pilih murid…</option>' + data.map(m =>
+    `<option value="${m.id}">${esc(m.nama)} — ${esc(m.kelas)}</option>`).join('');
+  sel.value = prev;
+}
+
+async function loadNilai() {
+  const res = await apiFetch('/api/nilai');
+  if (!res) return;
+  const data = await res.json();
+  const body = document.getElementById('nilaiBody');
+  const muridById = {};
+  try { const mr = await apiFetch('/api/murid'); if (mr) (await mr.json()).forEach(m => muridById[m.id] = m.nama); } catch (e) {}
+  if (!data.length) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Belum ada nilai.</td></tr>'; return; }
+  body.innerHTML = data.map(n => `
+    <tr>
+      <td>${esc(n.tanggal)}</td>
+      <td>${esc(muridById[n.murid_id] || n.murid_id)}</td>
+      <td>${esc(n.mapel)}</td>
+      <td><strong>${n.nilai}</strong></td>
+      <td><a class="link-maps" href="#" data-id="${n.id}" onclick="delNilai(event, this)">🗑</a></td>
+    </tr>`).join('');
+}
+
+async function addNilai() {
+  const murid_id = document.getElementById('nMurid').value;
+  const mapel    = document.getElementById('nMapel').value.trim();
+  const nilai    = document.getElementById('nNilai').value;
+  if (!murid_id || !mapel || nilai === '') { showToast('Pilih murid, isi mapel & nilai'); return; }
+  const res = await apiFetch('/api/nilai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ murid_id: Number(murid_id), mapel, nilai: Number(nilai) }),
+  });
+  if (res && res.ok) {
+    showToast('✅ Nilai disimpan');
+    document.getElementById('nMapel').value = '';
+    document.getElementById('nNilai').value = '';
+    loadNilai(); loadRata2();
+  } else {
+    const d = await res.json().catch(() => ({}));
+    showToast('❌ ' + (d.detail || 'Gagal menyimpan nilai'));
+  }
+}
+
+async function delNilai(e, el) {
+  e.preventDefault();
+  if (!confirm('Hapus nilai ini?')) return;
+  const res = await apiFetch(`/api/nilai/${el.dataset.id}`, { method: 'DELETE' });
+  if (res && res.ok) { showToast('✅ Nilai dihapus'); loadNilai(); loadRata2(); }
+  else showToast('❌ Gagal menghapus');
+}
+
+async function loadRata2() {
+  const res = await apiFetch('/api/nilai/rata2');
+  if (!res) return;
+  const data = await res.json();
+  const body = document.getElementById('rataBody');
+  const withVal = data.filter(r => r.rata2 !== null);
+  if (!withVal.length) { body.innerHTML = '<tr><td colspan="5" class="empty-msg">Belum ada nilai.</td></tr>'; return; }
+  body.innerHTML = withVal.map((r, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${esc(r.nama)}</strong></td>
+      <td>${esc(r.kelas)}</td>
+      <td>${r.jumlah}</td>
+      <td><strong>${r.rata2}</strong></td>
+    </tr>`).join('');
 }
 
 /* ── Utils ── */

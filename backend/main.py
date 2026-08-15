@@ -680,3 +680,109 @@ def export_rekap_excel(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{fname}"'}
     )
+
+# ── Guru: materi ────────────────────────────────────────────────────────────
+class MateriIn(BaseModel):
+    judul: str
+    isi: str
+
+@app.get("/api/materi")
+def list_materi(payload: dict = Depends(verify_token)):
+    conn = get_conn()
+    cur  = conn.cursor()
+    cur.execute("SELECT id, judul, isi, tanggal, created_by, created_at FROM materi ORDER BY tanggal DESC, id DESC")
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return rows
+
+@app.post("/api/materi")
+def create_materi(data: MateriIn, payload: dict = Depends(verify_token)):
+    if not data.judul.strip() or not data.isi.strip():
+        raise HTTPException(status_code=400, detail="Judul & isi materi wajib diisi")
+    conn = get_conn()
+    cur  = conn.cursor()
+    cur.execute(
+        "INSERT INTO materi (judul, isi, tanggal, created_by) VALUES (?, ?, ?, ?)",
+        (data.judul.strip(), data.isi.strip(), datetime.now().strftime("%Y-%m-%d"), payload["sub"]))
+    conn.commit()
+    mid = cur.lastrowid
+    conn.close()
+    return {"ok": True, "id": mid}
+
+@app.delete("/api/materi/{materi_id}")
+def delete_materi(materi_id: int, payload: dict = Depends(verify_token)):
+    conn = get_conn()
+    cur  = conn.cursor()
+    cur.execute("DELETE FROM materi WHERE id = ?", (materi_id,))
+    conn.commit()
+    deleted = cur.rowcount
+    conn.close()
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Materi tidak ditemukan")
+    return {"ok": True}
+
+# ── Guru: nilai ─────────────────────────────────────────────────────────────
+class NilaiIn(BaseModel):
+    murid_id: int
+    mapel: str
+    nilai: float
+    tanggal: str = ""
+
+@app.get("/api/nilai")
+def list_nilai(murid_id: int = None, payload: dict = Depends(verify_token)):
+    conn = get_conn()
+    cur  = conn.cursor()
+    if murid_id:
+        cur.execute("SELECT id, murid_id, mapel, nilai, tanggal FROM nilai WHERE murid_id = ? ORDER BY tanggal DESC, id DESC", (murid_id,))
+    else:
+        cur.execute("SELECT id, murid_id, mapel, nilai, tanggal FROM nilai ORDER BY tanggal DESC, id DESC")
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return rows
+
+@app.post("/api/nilai")
+def create_nilai(data: NilaiIn, payload: dict = Depends(verify_token)):
+    if not data.mapel.strip():
+        raise HTTPException(status_code=400, detail="Mata pelajaran wajib diisi")
+    if not (0 <= data.nilai <= 100):
+        raise HTTPException(status_code=400, detail="Nilai harus 0-100")
+    conn = get_conn()
+    cur  = conn.cursor()
+    cur.execute("SELECT id FROM murid WHERE id = ?", (data.murid_id,))
+    if not cur.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Murid tidak ditemukan")
+    tanggal = data.tanggal or datetime.now().strftime("%Y-%m-%d")
+    cur.execute(
+        "INSERT INTO nilai (murid_id, mapel, nilai, tanggal) VALUES (?, ?, ?, ?)",
+        (data.murid_id, data.mapel.strip(), data.nilai, tanggal))
+    conn.commit()
+    nid = cur.lastrowid
+    conn.close()
+    return {"ok": True, "id": nid}
+
+@app.get("/api/nilai/rata2")
+def rata2_nilai(payload: dict = Depends(verify_token)):
+    conn = get_conn()
+    cur  = conn.cursor()
+    cur.execute("""
+        SELECT m.id AS murid_id, m.nama, m.kelas,
+               ROUND(AVG(n.nilai), 2) AS rata2, COUNT(n.id) AS jumlah
+        FROM murid m LEFT JOIN nilai n ON n.murid_id = m.id
+        GROUP BY m.id ORDER BY m.urutan, m.nama
+    """)
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return rows
+
+@app.delete("/api/nilai/{nilai_id}")
+def delete_nilai(nilai_id: int, payload: dict = Depends(verify_token)):
+    conn = get_conn()
+    cur  = conn.cursor()
+    cur.execute("DELETE FROM nilai WHERE id = ?", (nilai_id,))
+    conn.commit()
+    deleted = cur.rowcount
+    conn.close()
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Nilai tidak ditemukan")
+    return {"ok": True}
