@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "C:\Users\Suran\Documents\absensi-guru\backend\serve.py", line 8, in <module>
+    from main import app
+  File "C:\Users\Suran\Documents\absensi-guru\backend\main.py", line 33, in <module>
+    raise RuntimeError("SECRET_KEY belum di-set di .env")
+RuntimeError: SECRET_KEY belum di-set di .env

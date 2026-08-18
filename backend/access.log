@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "C:\Users\Suran\Documents\absensi-guru\backend\serve.py", line 8, in <module>
+    from main import app
+  File "C:\Users\Suran\Documents\absensi-guru\backend\main.py", line 33, in <module>
+    raise RuntimeError("SECRET_KEY belum di-set di .env")
+RuntimeError: SECRET_KEY belum di-set di .env
+INFO:     Started server process [5328]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8000): [winerror 10048] only one usage of each socket address (protocol/network address/port) is normally permitted
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+[DB] Database initialized.
+[DB] Password admin 'admin_mi' diperbarui.
+[DB] Password admin 'admin_mts' diperbarui.
+[DB] Password admin 'admin_ra' diperbarui.

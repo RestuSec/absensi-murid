@@ -42,4 +42,4 @@ def serve_html(filename: str):
 if __name__ == "__main__":
     import uvicorn
     reload = os.getenv("UVICORN_RELOAD", "0").lower() in ("1", "true", "yes")
-    uvicorn.run("serve:app", host="0.0.0.0", port=8000, reload=reload)
+    uvicorn.run("serve:app", host="0.0.0.0", port=8001, reload=reload)
