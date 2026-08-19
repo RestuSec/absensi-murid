@@ -10,7 +10,7 @@
 
 <div class="login-card">
   <div class="login-logo">
-    <img class="logo-img" src="static/img/logo.png" alt="Logo">
+    <img class="logo-img" src="static/img/logo.png" alt="Logo" width="76" height="76">
     <h1>RestuSec</h1>
     <p>Absensi Murid</p>
   </div>
@@ -24,7 +24,7 @@
       <label>Password</label>
       <div class="input-wrap">
         <input type="password" id="password" placeholder="Masukkan password" autocomplete="current-password" required>
-        <button type="button" class="toggle-pw" onclick="togglePw()">👁</button>
+        <button type="button" class="toggle-pw" onclick="togglePw()" aria-label="Tampilkan sandi">👁</button>
       </div>
     </div>
     <div id="loginError" class="error-msg" style="display:none"></div>

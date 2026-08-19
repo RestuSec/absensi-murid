@@ -31,9 +31,9 @@
       <div class="nm" id="nm"></div>
       <div class="dt" id="dt"></div>
     </div>
-    <button id="hadir">✅ Hadir</button>
-    <button id="izin">📋 Izin</button>
-    <button id="sakit">🏥 Sakit</button>
+    <button id="hadir" type="button">✅ Hadir</button>
+    <button id="izin" type="button">📋 Izin</button>
+    <button id="sakit" type="button">🏥 Sakit</button>
     <div id="confirm" style="display:none">
       <div id="confirmMsg" style="font-size:17px;font-weight:bold;margin:10px 0 14px"></div>
       <button id="kirim" style="background:#2563eb">📤 Kirim</button>
@@ -68,7 +68,9 @@ function getLoc(){
   navigator.geolocation.getCurrentPosition(p=>{
     lat=p.coords.latitude; lon=p.coords.longitude;
     $('loc').textContent=`📍 ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-  }, ()=>{}); // gagal ambil lokasi → tetap kirim tanpa lokasi, tanpa peringatan
+  }, ()=>{
+    $('loc').textContent='📍 Lokasi tidak tersedia (absen tanpa lokasi)';
+  });
 }
 
 async function absen(status){

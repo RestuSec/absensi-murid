@@ -164,10 +164,20 @@ function attachLongPress(tr) {
   tr.addEventListener('mouseup',    cancel);
   tr.addEventListener('mouseleave', cancel);
 
-  // Touch
-  tr.addEventListener('touchstart', (e) => { e.preventDefault(); start(); }, { passive: false });
+  // Touch — no preventDefault, allow scroll to work
+  tr.addEventListener('touchstart', start, { passive: true });
   tr.addEventListener('touchend',   cancel);
   tr.addEventListener('touchmove',  cancel);
+
+  // Keyboard — Enter/Space to enter select mode on focused row
+  tr.setAttribute('tabindex', '0');
+  tr.setAttribute('role', 'row');
+  tr.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      enterSelectMode(tr.dataset.id);
+    }
+  });
 }
 
 function enterSelectMode(firstId) {
@@ -244,7 +254,7 @@ async function exportExcel() {
   const tgl = document.getElementById('filterTgl').value;
   const url = tgl ? `/api/absensi/export?tanggal=${tgl}` : '/api/absensi/export';
 
-  showToast('⏳ Menyiapkan file Excel...');
+  showToast('⏳ Menyiapkan file Excel…');
   try {
     const res = await apiFetch(url);
     if (!res || !res.ok) { showToast('❌ Gagal export'); return; }
@@ -306,7 +316,7 @@ async function exportRekap() {
   const end   = document.getElementById('rekapEnd').value;
   if (!start || !end) { showToast('Pilih tanggal awal & akhir dulu'); return; }
 
-  showToast('⏳ Menyiapkan file Excel rekap...');
+  showToast('⏳ Menyiapkan file Excel rekap…');
   try {
     const res = await apiFetch(`/api/rekap/export?start=${start}&end=${end}`);
     if (!res || !res.ok) { showToast('❌ Gagal export'); return; }

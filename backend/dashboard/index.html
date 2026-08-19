@@ -11,7 +11,7 @@
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-logo"><img src="static/img/logo.png" alt="Logo Sekolah"></div>
+    <div class="sidebar-logo"><img src="static/img/logo.png" alt="Logo Sekolah" width="40" height="40"></div>
     <div class="sidebar-info">
       <span class="sidebar-title">RestuSec</span>
       <span class="sidebar-sub" id="sidebarUser">-</span>
@@ -44,10 +44,10 @@
 <main class="main" id="main">
   <!-- Topbar -->
   <header class="topbar">
-    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Buka menu">☰</button>
     <div class="topbar-title" id="pageTitle">Data Absensi</div>
     <div class="topbar-actions">
-      <button class="theme-toggle" onclick="toggleTheme()" title="Ganti tema">🌙</button>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Ganti tema" aria-label="Ganti tema">🌙</button>
     </div>
   </header>
 
@@ -59,6 +59,7 @@
         <p class="page-sub" id="todayDate"></p>
       </div>
       <div class="page-actions">
+        <label for="filterTgl" class="sr-only">Filter tanggal</label>
         <input type="date" id="filterTgl" class="input-date" onchange="loadAbsensi()">
         <button class="btn-success" onclick="exportExcel()">📥 Export Excel</button>
       </div>
@@ -86,7 +87,7 @@
 
     <!-- Toolbar delete mode -->
     <div class="delete-toolbar" id="deleteToolbar" style="display:none">
-      <button class="btn-cancel-sel" onclick="cancelSelect()">✕ Batal</button>
+      <button class="btn-cancel-sel" onclick="cancelSelect()">× Batal</button>
       <span id="selectedCount">0 dipilih</span>
       <button class="btn-select-all" onclick="selectAll()">☑ Pilih Semua</button>
       <button class="btn-delete-sel" onclick="deleteSelected()">🗑 Hapus</button>
@@ -122,8 +123,11 @@
     </div>
 
     <div class="page-actions" style="margin-bottom:16px;gap:8px;flex-wrap:wrap">
+      <label for="mUrutan" class="sr-only">Urutan</label>
       <input type="number" id="mUrutan" class="input-date" placeholder="Urutan" style="width:90px">
+      <label for="mNama" class="sr-only">Nama lengkap</label>
       <input type="text" id="mNama" class="input-date" placeholder="Nama lengkap" style="width:200px">
+      <label for="mKelas" class="sr-only">Kelas</label>
       <input type="text" id="mKelas" class="input-date" placeholder="Kelas" style="width:100px">
       <button class="btn-success" onclick="addMurid()">+ Tambah</button>
     </div>
@@ -154,7 +158,9 @@
         <p class="page-sub" id="rekapRange">Pilih rentang tanggal untuk melihat rekap.</p>
       </div>
       <div class="page-actions">
+        <label for="rekapStart" class="sr-only">Tanggal awal</label>
         <input type="date" id="rekapStart" class="input-date">
+        <label for="rekapEnd" class="sr-only">Tanggal akhir</label>
         <input type="date" id="rekapEnd" class="input-date">
         <button class="btn-secondary" onclick="loadRekap()">Tampilkan</button>
         <button class="btn-success" onclick="exportRekap()">📥 Export Rekap</button>
@@ -190,7 +196,9 @@
       </div>
     </div>
     <div class="page-actions" style="margin-bottom:16px;gap:8px;flex-wrap:wrap">
+      <label for="mJudul" class="sr-only">Judul materi</label>
       <input type="text" id="mJudul" class="input-date" placeholder="Judul materi" style="width:220px">
+      <label for="mIsi" class="sr-only">Isi materi</label>
       <input type="text" id="mIsi" class="input-date" placeholder="Isi / link / deskripsi" style="flex:1;min-width:180px">
       <button class="btn-success" onclick="addMateri()">+ Simpan</button>
     </div>
@@ -220,8 +228,11 @@
       </div>
     </div>
     <div class="page-actions" style="margin-bottom:16px;gap:8px;flex-wrap:wrap">
+      <label for="nMurid" class="sr-only">Pilih murid</label>
       <select id="nMurid" class="input-date" style="width:auto"><option value="">Pilih murid…</option></select>
+      <label for="nMapel" class="sr-only">Mata pelajaran</label>
       <input type="text" id="nMapel" class="input-date" placeholder="Mapel" style="width:120px">
+      <label for="nNilai" class="sr-only">Nilai 0 sampai 100</label>
       <input type="number" id="nNilai" class="input-date" placeholder="Nilai 0-100" style="width:100px" min="0" max="100">
       <button class="btn-success" onclick="addNilai()">+ Simpan</button>
     </div>
@@ -262,7 +273,7 @@
 </main>
 
 <!-- TOAST -->
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" aria-live="polite" role="status"></div>
 
 <script src="static/js/app.js?v=6"></script>
 </body>
