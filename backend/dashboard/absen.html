@@ -3,118 +3,114 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Absensi &mdash; RestuSec</title>
+<title>Absensi — RestuSec</title>
 <style>
-  body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    margin: 0; padding: 16px; min-height: 100vh;
-    background:
-      radial-gradient(900px 500px at 10% -10%, rgba(59,130,246,.25), transparent 55%),
-      radial-gradient(800px 500px at 95% 110%, rgba(30,64,175,.30), transparent 55%),
-      #0B0F1A;
-    color: #E7ECF5;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .card {
-    background: linear-gradient(160deg, #141B30 0%, #101626 100%);
-    border: 1px solid #26314D;
-    max-width: 400px; width: 100%; margin: 24px auto;
-    padding: 28px 24px; border-radius: 16px; text-align: center;
-    box-shadow: 0 10px 30px rgba(30,64,175,.25);
-    animation: card-in .45s ease both;
-  }
-  @keyframes card-in {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .logo { width: 64px; height: 64px; object-fit: contain; margin: 0 auto 8px; display: block;
-        filter: drop-shadow(0 4px 14px rgba(59,130,246,.55));
-        animation: logo-in .7s cubic-bezier(.2,.9,.3,1.2) both; }
-  @keyframes logo-in {
-    from { opacity: 0; transform: scale(.5) translateY(-12px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
-  }
-  h1 { font-size: 19px; margin: 0 0 4px; min-height: 1.3em; }
-  .caret {
-    display: inline-block; width: 3px; height: 1em;
-    background: #60A5FA; vertical-align: -2px; margin-left: 2px;
-    box-shadow: 0 0 8px rgba(96,165,250,.8);
-    animation: blink .8s step-end infinite;
-  }
-  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
-  p.sub { color: #8FA0BD; font-size: 13px; margin: 0 0 20px; }
-  .who { background: rgba(59,130,246,.10); border: 1px solid #26314D; border-radius: 12px; padding: 14px; margin-bottom: 18px;
-        animation: who-in .5s ease .4s both; }
-  @keyframes who-in {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .who .nm { font-size: 18px; font-weight: 700; }
-  .who .dt { color: #8FA0BD; font-size: 13px; margin-top: 4px; }
-  button {
-    width: 100%; padding: 15px; font-size: 16px; font-weight: 600;
-    border-radius: 10px; border: none; margin-bottom: 10px; cursor: pointer; color: #fff;
-    position: relative; overflow: hidden;
-    transition: transform .12s ease, box-shadow .2s ease;
-    will-change: transform;
-  }
-  #hadir  { background: linear-gradient(135deg,#22C55E,#16A34A); box-shadow: 0 4px 18px rgba(34,197,94,.45); }
-  #izin   { background: linear-gradient(135deg,#F59E0B,#D97706); box-shadow: 0 4px 18px rgba(245,158,11,.40); }
-  #sakit  { background: linear-gradient(135deg,#EF4444,#DC2626); box-shadow: 0 4px 18px rgba(239,68,68,.40); }
-  button::after {
-    content: ""; position: absolute; inset: -50%;
-    background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,.35) 50%, transparent 60%);
-    transform: translateX(-60%);
-    animation: shine 1.4s ease .9s 1; /* nyapu sekali pas halaman kebuka */
-    pointer-events: none;
-  }
-  @keyframes shine {
-    0%   { transform: translateX(-60%); }
-    100% { transform: translateX(60%); }
-  }
-  button:hover { transform: translateY(-2px); }
-  button:active { transform: scale(.97); transition-duration: .06s; }
-  #loc { font-size: 13px; color: #8FA0BD; margin: 12px 0; }
-  #result { margin-top: 12px; padding: 12px; border-radius: 10px; font-size: 15px; display: none; white-space: pre-line; }
-  .ok { background: #0E2A1A; color: #4ADE80; animation: ok-in .45s cubic-bezier(.2,.9,.3,1.15) both; }
-  .ok-hadir { box-shadow: 0 0 22px rgba(34,197,94,.35); color: #4ADE80; }
-  .ok-izin  { box-shadow: 0 0 22px rgba(245,158,11,.35); color: #FBBF24; }
-  .ok-sakit { box-shadow: 0 0 22px rgba(239,68,68,.35); color: #F87171; }
-  .err { background: #331111; color: #F87171; animation: pop-in .3s ease both; }
-  @keyframes ok-in {
-    from { opacity: 0; transform: scale(.8) translateY(6px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
-  }
-  @keyframes pop-in {
-    from { opacity: 0; transform: scale(.96); }
-    to   { opacity: 1; transform: scale(1); }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .card, .ok, .err, button { animation: none !important; transition: none !important; }
-  }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin:0; padding:16px;
+         background:#0f172a; color:#f1f5f9; min-height:100vh; }
+  .card { background:#1e293b; max-width:420px; margin:24px auto; padding:24px; border-radius:16px;
+          text-align:center; box-shadow:0 4px 20px rgba(0,0,0,.4); }
+  h1 { font-size:20px; margin:0 0 4px; }
+  p.sub { color:#94a3b8; font-size:13px; margin:0 0 20px; }
+  .who { background:#334155; border-radius:12px; padding:14px; margin-bottom:18px; }
+  .who .nm { font-size:18px; font-weight:bold; }
+  .who .dt { color:#94a3b8; font-size:13px; margin-top:4px; }
+  button { width:100%; padding:15px; font-size:16px; font-weight:bold; border-radius:10px;
+        border:none; margin-bottom:10px; cursor:pointer; color:#fff; }
+  #hadir { background:#22c55e; } #izin { background:#f59e0b; } #sakit { background:#ef4444; }
+  #loc { font-size:13px; color:#94a3b8; margin:12px 0; }
+  #result { margin-top:12px; padding:12px; border-radius:10px; font-size:15px; display:none;
+        white-space:pre-line; }
+  .ok { background:#14532d; } .err { background:#7f1d1d; }
 </style>
 </head>
 <body>
   <div class="card">
-    <img class="logo" src="static/img/logo.png" alt="RestuSec">
-    <h1 id="typeTitle"><span class="caret"></span></h1>
-    <p class="sub">RestuSec &mdash; Absensi</p>
+    <h1>🏫 RestuSec — Absensi</h1>
+    <p class="sub">Pilih status kehadiran kamu hari ini</p>
     <div id="who" class="who" style="display:none">
       <div class="nm" id="nm"></div>
       <div class="dt" id="dt"></div>
     </div>
-<button id="hadir" type="button">&#9989; Hadir</button>
-    <button id="izin" type="button">&#128203; Izin</button>
-    <button id="sakit" type="button">&#127973; Sakit</button>
+    <button id="hadir" type="button">✅ Hadir</button>
+    <button id="izin" type="button">📋 Izin</button>
+    <button id="sakit" type="button">🏥 Sakit</button>
     <div id="confirm" style="display:none">
-      <div id="confirmMsg" style="font-size:17px;font-weight:700;margin:10px 0 14px"></div>
-      <button id="kirim" style="background:linear-gradient(135deg,#3B82F6,#2563EB)">&#128228; Kirim</button>
-      <button id="batal" style="background:#26314D">Batal</button>
+      <div id="confirmMsg" style="font-size:17px;font-weight:bold;margin:10px 0 14px"></div>
+      <button id="kirim" style="background:#2563eb">📤 Kirim</button>
+      <button id="batal" style="background:#475569">Batal</button>
     </div>
     <div id="loc"></div>
     <div id="result"></div>
   </div>
 
-<script src="static/js/absen.js?v=18"></script>
+<script>
+const $ = id => document.getElementById(id);
+const t = new URLSearchParams(location.search).get('t');
+let lat = null, lon = null, info = null;
+
+async function init(){
+  if(!t){ $('result').className='err'; $('result').style.display='block';
+          $('result').textContent='QR tidak valid. Hubungi admin.'; return; }
+  try{
+    const r = await fetch(`/api/absen/info/${t}`);
+    if(!r.ok) throw new Error('QR tidak valid');
+    info = await r.json();
+    $('nm').textContent = info.nama;
+    $('dt').textContent = [info.kelas, info.unit].filter(Boolean).join(' · ');
+    $('who').style.display = 'block';
+    getLoc();
+  }catch(e){ $('result').className='err'; $('result').style.display='block';
+             $('result').textContent=e.message; }
+}
+
+function getLoc(){
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(p=>{
+    lat=p.coords.latitude; lon=p.coords.longitude;
+    $('loc').textContent=`📍 ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+  }, ()=>{
+    $('loc').textContent='📍 Lokasi tidak tersedia (absen tanpa lokasi)';
+  });
+}
+
+async function absen(status){
+  const fd = new FormData();
+  fd.append('token', t);
+  fd.append('status', status);
+  if(lat!==null){ fd.append('latitude',lat); fd.append('longitude',lon); }
+  const r = await fetch('/api/absen-web',{method:'POST',body:fd});
+  const j = await r.json();
+  if(!r.ok) return show('err', j.detail||'Gagal');
+  const emoji = {Hadir:'✅',Izin:'📋',Sakit:'🏥'}[j.status];
+  show('ok', `${emoji} Absen ${j.status} berhasil!\n${j.nama}\nJam ${j.jam} - ${j.tanggal}`);
+}
+
+function show(type,msg){
+  $('result').className = type;
+  $('result').textContent = msg;
+  $('result').style.display = 'block';
+}
+
+let pending = null;
+const statusBtn = ['hadir','izin','sakit'];
+function ask(status){
+  pending = status;
+  const emoji = {Hadir:'✅',Izin:'📋',Sakit:'🏥'}[status];
+  $('confirmMsg').textContent = `Absen ${emoji} ${status}?`;
+  statusBtn.forEach(id => $(id).style.display = 'none');
+  $('confirm').style.display = 'block';
+  $('result').style.display = 'none';
+}
+$('hadir').onclick=()=>ask('Hadir');
+$('izin').onclick=()=>ask('Izin');
+$('sakit').onclick=()=>ask('Sakit');
+$('batal').onclick=()=>{
+  pending = null;
+  $('confirm').style.display = 'none';
+  statusBtn.forEach(id => $(id).style.display = '');
+};
+$('kirim').onclick=()=>{ if(pending) absen(pending); };
+init();
+</script>
 </body>
 </html>
