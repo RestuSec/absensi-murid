@@ -48,6 +48,7 @@
   .logo-img, .login-logo h1, .login-logo p, .login-card form { animation: none !important; }
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 html { scroll-behavior: smooth; }
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
@@ -111,7 +112,8 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   background: var(--surface); color: var(--text); font-size: 14px;
   transition: border-color var(--transition); outline: none;
 }
-.form-group input:focus { border-color: var(--accent); }
+.form-group input:focus { border-color: var(--accent); outline: none; }
+.form-group input:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .input-wrap { position: relative; }
 .input-wrap input { padding-right: 42px; }
@@ -120,6 +122,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   font-size: 16px; opacity: .5; padding: 4px;
 }
 .toggle-pw:hover { opacity: 1; }
+.toggle-pw:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .error-msg {
   background: var(--sakit-bg); color: var(--sakit);
@@ -135,6 +138,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .btn-primary:hover  { background: #2563EB; }
 .btn-primary:active { transform: scale(.98); }
 .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+.btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ── LAYOUT ── */
 .sidebar {
@@ -162,6 +166,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 }
 .nav-item:hover  { background: var(--surface2); color: var(--text); }
 .nav-item.active { background: var(--sel-bg); color: var(--sel); font-weight: 600; }
+.nav-item:focus-visible { outline: 2px solid var(--sel); outline-offset: -2px; border-radius: 8px; }
 .nav-icon { font-size: 15px; }
 
 .sidebar-footer { padding: 14px 18px; border-top: 1px solid var(--border); }
@@ -171,6 +176,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   transition: background var(--transition), color var(--transition);
 }
 .btn-logout:hover { background: var(--sakit-bg); color: var(--sakit); }
+.btn-logout:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
 
 .main { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
 
@@ -182,6 +188,8 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   display: flex; align-items: center; gap: 16px;
 }
 .menu-toggle { font-size: 20px; color: var(--text2); display: none; }
+.menu-toggle { font-size: 20px; color: var(--text2); display: none; }
+.menu-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .topbar-title { flex: 1; font-weight: 600; font-size: 16px; color: var(--ink); }
 .theme-toggle {
   width: 36px; height: 36px; border-radius: 50%;
@@ -189,7 +197,9 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   font-size: 16px; display: flex; align-items: center; justify-content: center;
 }
 .login-page .theme-toggle { position: fixed; top: 16px; right: 16px; z-index: 10; }
+.login-page .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .theme-toggle:hover { background: var(--border); }
+.theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ── PAGES ── */
 .page { display: none; padding: 24px; }
@@ -204,6 +214,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   background: var(--surface); color: var(--text); font-size: 13px; outline: none;
 }
 .input-date:focus { border-color: var(--accent); }
+.input-date:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .btn-secondary {
   padding: 9px 16px; border-radius: 9px;
@@ -212,12 +223,15 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   transition: background var(--transition);
 }
 .btn-secondary:hover { background: var(--border); }
+.btn-secondary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 .btn-success {
   padding: 9px 16px; border-radius: 9px;
   background: var(--hadir); color: #fff; font-size: 13px; font-weight: 500;
   transition: opacity var(--transition);
 }
 .btn-success:hover { opacity: .88; }
+.btn-success:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ── STATS ── */
 .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
@@ -293,12 +307,15 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   padding: 6px 14px; border-radius: 7px;
   background: var(--surface2); border: 1px solid var(--border); font-size: 13px; color: var(--text);
 }
+.btn-cancel-sel:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .btn-select-all {
   padding: 6px 14px; border-radius: 7px; background: var(--accent); color: #fff; font-size: 13px;
 }
+.btn-select-all:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .btn-delete-sel {
   padding: 6px 14px; border-radius: 7px; background: var(--sakit); color: #fff; font-size: 13px; font-weight: 600;
 }
+.btn-delete-sel:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 /* ── TABLE ── */
 .table-wrap {
@@ -321,6 +338,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .data-table tr.selected td { background: var(--sel-bg); }
 .col-check { width: 42px; }
 .data-table input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
+.data-table input[type="checkbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .badge {
   display: inline-flex; align-items: center; gap: 4px;
@@ -333,7 +351,9 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
 .link-maps { color: var(--accent); font-size: 12px; }
 .link-maps:hover { text-decoration: underline; }
-.data-table tr.pressing td { background: rgba(211,69,60,.06); }
+.link-maps:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.no-loc { color: var(--text2); font-size: 12px; }
+.data-table tr.pressing td { background: rgba(239,68,68,.06); }
 
 /* ── TOAST ── */
 .toast {
