@@ -2,14 +2,14 @@
 const API = '';  // Relative URL, karena served dari FastAPI
 
 /* ── Auth guard ── */
-const token    = localStorage.getItem('token');
-const unit     = localStorage.getItem('unit');
-const username = localStorage.getItem('username');
+const token    = sessionStorage.getItem('token') || localStorage.getItem('token');
+const unit     = sessionStorage.getItem('unit')  || localStorage.getItem('unit');
+const username = sessionStorage.getItem('username') || localStorage.getItem('username');
 
 if (!token) { window.location.href = 'login.html'; }
 
 /* ── Theme ── */
-const savedTheme = localStorage.getItem('theme') || 'light';
+const savedTheme = localStorage.getItem('theme') || 'dark';
 document.documentElement.setAttribute('data-theme', savedTheme);
 updateThemeBtn();
 
@@ -42,16 +42,37 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('rekapStart').value = firstDay;
   document.getElementById('rekapEnd').value   = today;
 
+  // Event bindings (no inline handlers, aman untuk CSP tanpa 'unsafe-inline')
+  document.querySelectorAll('.nav-item').forEach(el =>
+    el.addEventListener('click', (e) => { e.preventDefault(); showPage(el.dataset.page, el); }));
+  document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+  document.getElementById('sidebarBackdrop').addEventListener('click', closeSidebar);
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+  document.getElementById('filterTgl').addEventListener('change', loadAbsensi);
+  document.getElementById('calPrev').addEventListener('click', () => calMove(-1));
+  document.getElementById('calNext').addEventListener('click', () => calMove(1));
+  document.getElementById('exportBtn').addEventListener('click', exportExcel);
+  document.getElementById('cancelSelectBtn').addEventListener('click', cancelSelect);
+  document.getElementById('selectAllBtn').addEventListener('click', selectAll);
+  document.getElementById('deleteSelBtn').addEventListener('click', deleteSelected);
+  document.getElementById('addMuridBtn').addEventListener('click', addMurid);
+  document.getElementById('rekapBtn').addEventListener('click', loadRekap);
+  document.getElementById('exportRekapBtn').addEventListener('click', exportRekap);
+  document.getElementById('addMateriBtn').addEventListener('click', addMateri);
+  document.getElementById('addNilaiBtn').addEventListener('click', addNilai);
+
   loadAbsensi();
   loadStats();
+  initCalendar();
 });
 
 /* ── Navigation ── */
-function showPage(page) {
+function showPage(page, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
-  event.currentTarget.classList.add('active');
+  if (el) el.classList.add('active');
   const titles = { absensi: 'Data Absensi', murid: 'Murid & QR', rekap: 'Rekap', materi: 'Materi', nilai: 'Nilai' };
   document.getElementById('pageTitle').textContent = titles[page] || 'Absensi';
   if (page === 'murid') loadMurid();
@@ -84,6 +105,85 @@ async function apiFetch(url, opts = {}) {
   return res;
 }
 
+/* ── Kalender (Wall Planner) ── */
+const BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+let calYear, calMonth;
+const calDays = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+
+function initCalendar() {
+  const now = new Date();
+  calYear  = now.getFullYear();
+  calMonth = now.getMonth();
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const title = document.getElementById('calTitle');
+  title.textContent = `${BULAN[calMonth]} ${calYear}`;
+
+  const first = new Date(calYear, calMonth, 1);
+  const startPad = first.getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const monthPrefix = `${calYear}-${String(calMonth + 1).padStart(2, '0')}`;
+
+  // Hari-hari yang punya absensi pada bulan tampil (pakai endpoint tanpa tanggal = 200 terakhir)
+  const byDate = {};
+  fetch('/api/absensi')
+    .then(r => r.ok ? r.json() : [])
+    .then(rows => {
+      rows.forEach(r => {
+        if (r.tanggal && r.tanggal.startsWith(monthPrefix)) {
+          byDate[r.tanggal] = byDate[r.tanggal] || { Hadir: 0, Izin: 0, Sakit: 0 };
+          byDate[r.tanggal][r.status] = (byDate[r.tanggal][r.status] || 0) + 1;
+        }
+      });
+      drawCells(byDate, startPad, daysInMonth);
+    })
+    .catch(() => drawCells(byDate, startPad, daysInMonth));
+}
+
+function calMove(dir) {
+  calMonth += dir;
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0;  calYear++; }
+  renderCalendar();
+}
+
+function drawCells(byDate, startPad, daysInMonth) {
+  const grid = document.getElementById('calGrid');
+  let html = '';
+  for (let i = 0; i < startPad; i++) html += '<div class="cal-cell empty"></div>';
+
+  const selected = document.getElementById('filterTgl').value;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const today = iso === new Date().toISOString().slice(0, 10);
+    const c = byDate[iso];
+    const cls = ['cal-cell', today ? 'today' : '', selected === iso ? 'selected' : ''].filter(Boolean).join(' ');
+    let dots = '';
+    if (c) {
+      dots = '<span class="cal-dots">'
+        + (c.Hadir ? `<i class="dot h" title="Hadir ${c.Hadir}"></i>` : '')
+        + (c.Izin  ? `<i class="dot i" title="Izin ${c.Izin}"></i>` : '')
+        + (c.Sakit ? `<i class="dot s" title="Sakit ${c.Sakit}"></i>` : '')
+        + '</span>';
+    }
+    html += `<div class="${cls}" data-date="${iso}" role="button" tabindex="0">${dots}<span class="day">${d}</span></div>`;
+  }
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('.cal-cell:not(.empty)').forEach(cell => {
+    const go = () => {
+      document.getElementById('filterTgl').value = cell.dataset.date;
+      loadAbsensi();
+      renderCalendar();
+    };
+    cell.addEventListener('click', go);
+    cell.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+}
+
 /* ── Load Absensi ── */
 
 async function loadAbsensi() {
@@ -104,8 +204,8 @@ function renderTable(data) {
   }
 
   body.innerHTML = data.map(row => `
-    <tr data-id="${row.id}" oncontextmenu="return false;">
-      <td><input type="checkbox" class="row-check" data-id="${row.id}" onchange="onCheckChange()"></td>
+    <tr data-id="${row.id}">
+      <td><input type="checkbox" class="row-check" data-id="${row.id}"></td>
       <td>${formatTanggal(row.tanggal)}</td>
       <td>${esc(row.jam)}</td>
       <td><strong>${esc(row.nama)}</strong></td>
@@ -113,6 +213,8 @@ function renderTable(data) {
       <td>${badgeStatus(row.status)}</td>
     </tr>
   `).join('');
+
+  body.querySelectorAll('.row-check').forEach(cb => cb.addEventListener('change', onCheckChange));
 
   // Pasang long-press ke setiap row
   body.querySelectorAll('tr').forEach(attachLongPress);
@@ -164,10 +266,20 @@ function attachLongPress(tr) {
   tr.addEventListener('mouseup',    cancel);
   tr.addEventListener('mouseleave', cancel);
 
-  // Touch
-  tr.addEventListener('touchstart', (e) => { e.preventDefault(); start(); }, { passive: false });
+  // Touch — no preventDefault, allow scroll to work
+  tr.addEventListener('touchstart', start, { passive: true });
   tr.addEventListener('touchend',   cancel);
   tr.addEventListener('touchmove',  cancel);
+
+  // Keyboard — Enter/Space to enter select mode on focused row
+  tr.setAttribute('tabindex', '0');
+  tr.setAttribute('role', 'row');
+  tr.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      enterSelectMode(tr.dataset.id);
+    }
+  });
 }
 
 function enterSelectMode(firstId) {
@@ -244,7 +356,7 @@ async function exportExcel() {
   const tgl = document.getElementById('filterTgl').value;
   const url = tgl ? `/api/absensi/export?tanggal=${tgl}` : '/api/absensi/export';
 
-  showToast('⏳ Menyiapkan file Excel...');
+  showToast('⏳ Menyiapkan file Excel…');
   try {
     const res = await apiFetch(url);
     if (!res || !res.ok) { showToast('❌ Gagal export'); return; }
@@ -306,7 +418,7 @@ async function exportRekap() {
   const end   = document.getElementById('rekapEnd').value;
   if (!start || !end) { showToast('Pilih tanggal awal & akhir dulu'); return; }
 
-  showToast('⏳ Menyiapkan file Excel rekap...');
+  showToast('⏳ Menyiapkan file Excel rekap…');
   try {
     const res = await apiFetch(`/api/rekap/export?start=${start}&end=${end}`);
     if (!res || !res.ok) { showToast('❌ Gagal export'); return; }
@@ -348,11 +460,17 @@ async function loadMurid() {
       <td><strong>${esc(m.urutan || '-')}</strong></td>
       <td><strong>${esc(m.nama)}</strong></td>
       <td>${esc(m.kelas)}</td>
-      <td><a class="link-maps" href="#" data-id="${m.id}" data-nama="${esc(m.nama)}" data-token="${esc(m.token)}" onclick="showQR(event, this)">📱 Tampilkan</a></td>
-      <td><a class="link-maps" href="#" data-id="${m.id}" data-nama="${esc(m.nama)}" onclick="resetToken(event, this)" title="Buat token baru">🔄</a>
-          <a class="link-maps" href="#" data-id="${m.id}" data-nama="${esc(m.nama)}" onclick="delMurid(event, this)">🗑</a></td>
+      <td><a class="link-maps" href="#" data-id="${m.id}" data-nama="${esc(m.nama)}" data-token="${esc(m.token)}" data-action="showQR">📱 Tampilkan</a></td>
+      <td><a class="link-maps" href="#" data-id="${m.id}" data-nama="${esc(m.nama)}" data-action="resetToken" title="Buat token baru">🔄</a>
+          <a class="link-maps" href="#" data-id="${m.id}" data-nama="${esc(m.nama)}" data-action="delMurid">🗑</a></td>
     </tr>
   `).join('');
+
+  body.querySelectorAll('a[data-action]').forEach(a =>
+    a.addEventListener('click', (e) => {
+      const fn = { showQR, resetToken, delMurid }[a.dataset.action];
+      if (fn) fn(e, a);
+    }));
 }
 async function addMurid() {
   const nama   = document.getElementById('mNama').value.trim();
@@ -404,9 +522,16 @@ async function showQR(e, el) {
   overlay.id = 'qrOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:999';
   overlay.innerHTML = `
-    <div style="background:#fff;border-radius:14px;padding:24px;text-align:center;max-width:340px;width:90%">
+    <style>
+      .qr-pop { animation: qrIn .4s cubic-bezier(.2,.9,.3,1.2) both; }
+      @keyframes qrIn { from { opacity:0; transform:scale(.85);} to { opacity:1; transform:scale(1);} }
+      .qr-img { animation: qrImgIn .5s ease .1s both; }
+      @keyframes qrImgIn { from { opacity:0; transform:translateY(6px);} to { opacity:1; transform:translateY(0);} }
+      @media (prefers-reduced-motion: reduce) { .qr-pop,.qr-img{ animation:none !important; } }
+    </style>
+    <div class="qr-pop" style="background:#fff;border-radius:14px;padding:24px;text-align:center;max-width:340px;width:90%">
       <h3 style="margin:0 0 4px;color:#111">${esc(nama)}</h3>
-      <img id="qrImg" src="" alt="Memuat..." style="width:220px;height:220px;margin:12px 0;image-rendering:pixelated">
+      <img id="qrImg" class="qr-img" src="" alt="Memuat..." style="width:220px;height:220px;margin:12px 0;image-rendering:pixelated">
       <a id="qrDownload" href="#" download="qr-${esc(nama)}.png" style="display:block;padding:10px;margin-bottom:8px;border-radius:8px;background:#16a34a;color:#fff;font-weight:bold;text-decoration:none">⬇️ Unduh</a>
       <a id="qrWa" href="#" target="_blank" rel="noopener" style="display:block;padding:10px;margin-bottom:8px;border-radius:8px;background:#25D366;color:#fff;font-weight:bold;text-decoration:none">💬 Kirim via WhatsApp</a>
       <button id="qrClose" style="width:100%;padding:11px;border:none;border-radius:8px;background:#3b82f6;color:#fff;font-weight:bold;cursor:pointer">Tutup</button>
@@ -437,6 +562,10 @@ function logout() {
   localStorage.removeItem('token');
   localStorage.removeItem('unit');
   localStorage.removeItem('username');
+  localStorage.removeItem('savedUser');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('unit');
+  sessionStorage.removeItem('username');
   window.location.href = 'login.html';
 }
 
@@ -452,8 +581,11 @@ async function loadMateri() {
       <td>${esc(m.tanggal)}</td>
       <td><strong>${esc(m.judul)}</strong></td>
       <td style="white-space:pre-wrap">${esc(m.isi)}</td>
-      <td><a class="link-maps" href="#" data-id="${m.id}" onclick="delMateri(event, this)">🗑</a></td>
+      <td><a class="link-maps" href="#" data-id="${m.id}" data-action="delMateri">🗑</a></td>
     </tr>`).join('');
+
+  body.querySelectorAll('a[data-action="delMateri"]').forEach(a =>
+    a.addEventListener('click', (e) => delMateri(e, a)));
 }
 
 async function addMateri() {
@@ -507,8 +639,11 @@ async function loadNilai() {
       <td>${esc(muridById[n.murid_id] || n.murid_id)}</td>
       <td>${esc(n.mapel)}</td>
       <td><strong>${n.nilai}</strong></td>
-      <td><a class="link-maps" href="#" data-id="${n.id}" onclick="delNilai(event, this)">🗑</a></td>
+      <td><a class="link-maps" href="#" data-id="${n.id}" data-action="delNilai">🗑</a></td>
     </tr>`).join('');
+
+  body.querySelectorAll('a[data-action="delNilai"]').forEach(a =>
+    a.addEventListener('click', (e) => delNilai(e, a)));
 }
 
 async function addNilai() {

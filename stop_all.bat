@@ -3,8 +3,11 @@ title Absensi Murid - Stop All
 echo Menghentikan semua proses Absensi Murid...
 echo.
 
-rem Matikan python yang menjalankan uvicorn serve
-powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'serve:app' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }; 'Proses dihentikan.'"
+rem Matikan cloudflared tunnel
+powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='cloudflared.exe'\" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; 'Tunnel dihentikan.'"
+
+rem Matikan python yang menjalankan serve.py
+powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'serve' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; 'Backend dihentikan.'"
 
 echo.
 echo Semua proses sudah berhenti.

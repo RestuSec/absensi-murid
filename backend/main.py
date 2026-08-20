@@ -11,7 +11,7 @@ load_env()
 
 from fastapi import FastAPI, HTTPException, Depends, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.hash import bcrypt
@@ -60,6 +60,13 @@ app.add_middleware(
 )
 
 @app.middleware("http")
+async def force_https(request: Request, call_next):
+    proto = request.headers.get("x-forwarded-proto")
+    if proto and proto.split(",")[0].strip().lower() != "https":
+        return RedirectResponse(request.url.replace(scheme="https"), status_code=301)
+    return await call_next(request)
+
+@app.middleware("http")
 async def security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -70,7 +77,7 @@ async def security_headers(request: Request, call_next):
         "default-src 'self'; "
         "img-src 'self' data: https://maps.googleapis.com https://*.googleapis.com https://*.gstatic.com; "
         "style-src 'self' 'unsafe-inline'; "
-        "script-src 'self' 'unsafe-inline'; "
+        "script-src 'self'; "
         "connect-src 'self' https://*.googleapis.com; "
         "font-src 'self' data:; "
         "frame-ancestors 'none'; "
@@ -183,7 +190,11 @@ def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
     admin = cur.fetchone()
     conn.close()
 
-    if not admin or not bcrypt.verify(form.password, admin["password_hash"]):
+    # ponytail: dummy hash biar waktu verifikasi seragam — user yang tidak ada
+    # tetap jalan bcrypt sehingga attacker tidak bisa bedakan via timing.
+    DUMMY = "$2b$12$vt5g/54OZcsrT9MsRc4W2u88bwcOYvHv6FNb1Rx/f88r9Z5zzPDAW"
+    pwhash = admin["password_hash"] if admin else DUMMY
+    if not admin or not bcrypt.verify(form.password, pwhash):
         _login_attempts[key].append(time())
         _login_ip_attempts[ip].append(time())
         raise HTTPException(status_code=401, detail="Username atau password salah")
@@ -274,6 +285,8 @@ def reset_murid_token(murid_id: int, payload: dict = Depends(verify_token)):
 @app.get("/api/murid/{murid_id}/qr")
 def murid_qr(murid_id: int, payload: dict = Depends(verify_token)):
     import qrcode
+    from qrcode.constants import ERROR_CORRECT_H
+    from PIL import Image
     conn = get_conn()
     cur  = conn.cursor()
     cur.execute(
@@ -285,7 +298,24 @@ def murid_qr(murid_id: int, payload: dict = Depends(verify_token)):
     if not row:
         raise HTTPException(status_code=404, detail="Murid tidak ditemukan")
     url = f"{os.getenv('PUBLIC_URL', 'http://localhost:8000')}/absen?t={row['token']}"
-    img = qrcode.make(url)
+    qr = qrcode.QRCode(error_correction=ERROR_CORRECT_H, box_size=10, border=2)
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+
+    # Logo di atas latar putih solid. kotak ~1/3 lebar QR.
+    # ponytail: error-correction H cuma tahan ~30% area tertutup; gedein lagi = gagal scan.
+    logo_path = os.path.join(os.path.dirname(__file__), "dashboard", "static", "img", "logo.png")
+    if os.path.exists(logo_path):
+        logo = Image.open(logo_path).convert("RGBA")
+        pad = img.size[0] // 3
+        logo.thumbnail((int(pad * 0.8), int(pad * 0.8)))
+
+        box = Image.new("RGBA", (pad, pad), (255, 255, 255, 255))
+        pos = ((img.size[0] - pad) // 2, (img.size[1] - pad) // 2)
+        box.paste(logo, ((pad - logo.width) // 2, (pad - logo.height) // 2), logo)
+        img.paste(box, pos)
+
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
@@ -714,7 +744,9 @@ def create_materi(data: MateriIn, payload: dict = Depends(verify_token)):
 def delete_materi(materi_id: int, payload: dict = Depends(verify_token)):
     conn = get_conn()
     cur  = conn.cursor()
-    cur.execute("DELETE FROM materi WHERE id = ?", (materi_id,))
+    cur.execute(
+        "DELETE FROM materi WHERE id = ? AND (created_by = ? OR ? = 'ALL')",
+        (materi_id, payload["sub"], payload["unit"]))
     conn.commit()
     deleted = cur.rowcount
     conn.close()
@@ -731,12 +763,23 @@ class NilaiIn(BaseModel):
 
 @app.get("/api/nilai")
 def list_nilai(murid_id: int = None, payload: dict = Depends(verify_token)):
+    unit = payload["unit"]
     conn = get_conn()
     cur  = conn.cursor()
     if murid_id:
-        cur.execute("SELECT id, murid_id, mapel, nilai, tanggal FROM nilai WHERE murid_id = ? ORDER BY tanggal DESC, id DESC", (murid_id,))
+        cur.execute("""
+            SELECT n.id, n.murid_id, n.mapel, n.nilai, n.tanggal
+            FROM nilai n JOIN murid m ON m.id = n.murid_id
+            WHERE n.murid_id = ? AND (m.unit = ? OR ? = 'ALL')
+            ORDER BY n.tanggal DESC, n.id DESC
+        """, (murid_id, unit, unit))
     else:
-        cur.execute("SELECT id, murid_id, mapel, nilai, tanggal FROM nilai ORDER BY tanggal DESC, id DESC")
+        cur.execute("""
+            SELECT n.id, n.murid_id, n.mapel, n.nilai, n.tanggal
+            FROM nilai n JOIN murid m ON m.id = n.murid_id
+            WHERE m.unit = ? OR ? = 'ALL'
+            ORDER BY n.tanggal DESC, n.id DESC
+        """, (unit, unit))
     rows = [dict(r) for r in cur.fetchall()]
     conn.close()
     return rows
@@ -765,23 +808,30 @@ def create_nilai(data: NilaiIn, payload: dict = Depends(verify_token)):
 
 @app.get("/api/nilai/rata2")
 def rata2_nilai(payload: dict = Depends(verify_token)):
+    unit = payload["unit"]
     conn = get_conn()
     cur  = conn.cursor()
     cur.execute("""
         SELECT m.id AS murid_id, m.nama, m.kelas,
                ROUND(AVG(n.nilai), 2) AS rata2, COUNT(n.id) AS jumlah
         FROM murid m LEFT JOIN nilai n ON n.murid_id = m.id
+        WHERE m.unit = ? OR ? = 'ALL'
         GROUP BY m.id ORDER BY m.urutan, m.nama
-    """)
+    """, (unit, unit))
     rows = [dict(r) for r in cur.fetchall()]
     conn.close()
     return rows
 
 @app.delete("/api/nilai/{nilai_id}")
 def delete_nilai(nilai_id: int, payload: dict = Depends(verify_token)):
+    unit = payload["unit"]
     conn = get_conn()
     cur  = conn.cursor()
-    cur.execute("DELETE FROM nilai WHERE id = ?", (nilai_id,))
+    cur.execute("""
+        DELETE FROM nilai WHERE id = ? AND murid_id IN (
+            SELECT id FROM murid WHERE unit = ? OR ? = 'ALL'
+        )
+    """, (nilai_id, unit, unit))
     conn.commit()
     deleted = cur.rowcount
     conn.close()

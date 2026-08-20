@@ -1,53 +1,68 @@
+<!--
+  THESIS: Dashboard absensi yang satu pekerjaan — "hari ini siapa masuk?" — dirender
+  sebagai kalender bulan. Menolak layout admin generik (sidebar navy + tabel rapat)
+  demi satu grid tanggal tempat status Hadir/Izin/Sakit tampil sebagai dot warna.
+  OWN-WORLD: ground terang netral (kertas #F4F6F8), ink #1B2430, chip status hijau/kuning/
+  merah sebagai satu-satunya warna jenuh; system font stack (Segoe UI/system-ui), angka
+  tabular. Sidebar ramping kiri, kalender bulan sebagai tulang punggung halaman absensi.
+  STORY: pengunjung paham bulan berjalan dengan sekali pandang; hari-hari dengan absensi
+  membawa dot status, klik tanggal memfilter daftar di bawahnya.
+  FIRST VIEWPORT: sidebar kiri; header unit + tanggal; kartu stats; kalender bulan (grid
+  7 kolom, sel berisi nomor tanggal + dot status); daftar absensi hari terpilih di bawah.
+  FORM: Wall Planner (calendar grid), posisi 3 dari daftar grounding, seed da81adb0.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish
+  review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
+-->
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Absensi Murid</title>
-<link rel="stylesheet" href="static/css/style.css?v=6">
+<link rel="stylesheet" href="static/css/style.css?v=10">
 </head>
 <body>
 
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-logo"><img src="static/img/logo.png" alt="Logo Sekolah"></div>
+    <div class="sidebar-logo"><img src="static/img/logo.png" alt="Logo RestuSec" width="40" height="40"></div>
     <div class="sidebar-info">
       <span class="sidebar-title">RestuSec</span>
       <span class="sidebar-sub" id="sidebarUser">-</span>
     </div>
   </div>
   <nav class="sidebar-nav">
-    <a class="nav-item active" href="#" onclick="showPage('absensi')">
-      <span class="nav-icon">📋</span> Data Absensi
+    <a class="nav-item active" href="#" data-page="absensi">
+      <span class="nav-icon">&#128203;</span> Data Absensi
     </a>
-    <a class="nav-item" href="#" onclick="showPage('murid')">
-      <span class="nav-icon">👤</span> Murid & QR
+    <a class="nav-item" href="#" data-page="murid">
+      <span class="nav-icon">&#128100;</span> Murid &amp; QR
     </a>
-    <a class="nav-item" href="#" onclick="showPage('rekap')">
-      <span class="nav-icon">📊</span> Rekap
+    <a class="nav-item" href="#" data-page="rekap">
+      <span class="nav-icon">&#128202;</span> Rekap
     </a>
-    <a class="nav-item" href="#" onclick="showPage('materi')">
-      <span class="nav-icon">📚</span> Materi
+    <a class="nav-item" href="#" data-page="materi">
+      <span class="nav-icon">&#128218;</span> Materi
     </a>
-    <a class="nav-item" href="#" onclick="showPage('nilai')">
-      <span class="nav-icon">🎓</span> Nilai
+    <a class="nav-item" href="#" data-page="nilai">
+      <span class="nav-icon">&#127891;</span> Nilai
     </a>
   </nav>
   <div class="sidebar-footer">
-    <button class="btn-logout" onclick="logout()">🚪 Keluar</button>
+    <button class="btn-logout" id="logoutBtn" type="button">&#128682; Keluar</button>
   </div>
 </aside>
-<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()" role="button" aria-label="Tutup menu"></div>
+<div class="sidebar-backdrop" id="sidebarBackdrop" role="button" aria-label="Tutup menu"></div>
 
 <!-- MAIN -->
 <main class="main" id="main">
   <!-- Topbar -->
   <header class="topbar">
-    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Buka menu">&#9776;</button>
     <div class="topbar-title" id="pageTitle">Data Absensi</div>
     <div class="topbar-actions">
-      <button class="theme-toggle" onclick="toggleTheme()" title="Ganti tema">🌙</button>
+      <button class="theme-toggle" id="themeToggle" type="button" title="Ganti tema" aria-label="Ganti tema">&#127769;</button>
     </div>
   </header>
 
@@ -55,12 +70,13 @@
   <section class="page active" id="page-absensi">
     <div class="page-header">
       <div>
-        <h2 id="unitTitle">RestuSec — Absensi Murid</h2>
+        <h2 id="unitTitle">RestuSec &mdash; Absensi Murid</h2>
         <p class="page-sub" id="todayDate"></p>
       </div>
       <div class="page-actions">
-        <input type="date" id="filterTgl" class="input-date" onchange="loadAbsensi()">
-        <button class="btn-success" onclick="exportExcel()">📥 Export Excel</button>
+        <label for="filterTgl" class="sr-only">Filter tanggal</label>
+        <input type="date" id="filterTgl" class="input-date">
+        <button class="btn-success" id="exportBtn" type="button">&#128229; Export Excel</button>
       </div>
     </div>
 
@@ -84,12 +100,31 @@
       </div>
     </div>
 
+    <!-- Kalender bulan -->
+    <div class="calendar-card" id="calendarCard">
+      <div class="cal-head">
+        <button class="cal-nav" id="calPrev" type="button" aria-label="Bulan sebelumnya">&#8249;</button>
+        <div class="cal-title" id="calTitle">-</div>
+        <button class="cal-nav" id="calNext" type="button" aria-label="Bulan berikutnya">&#8250;</button>
+      </div>
+      <div class="cal-week">
+        <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend">
+        <span class="lg"><i class="dot h"></i>Hadir</span>
+        <span class="lg"><i class="dot i"></i>Izin</span>
+        <span class="lg"><i class="dot s"></i>Sakit</span>
+        <span class="lg"><i class="dot t"></i>Terpilih</span>
+      </div>
+    </div>
+
     <!-- Toolbar delete mode -->
     <div class="delete-toolbar" id="deleteToolbar" style="display:none">
-      <button class="btn-cancel-sel" onclick="cancelSelect()">✕ Batal</button>
+      <button class="btn-cancel-sel" id="cancelSelectBtn" type="button">&#10005; Batal</button>
       <span id="selectedCount">0 dipilih</span>
-      <button class="btn-select-all" onclick="selectAll()">☑ Pilih Semua</button>
-      <button class="btn-delete-sel" onclick="deleteSelected()">🗑 Hapus</button>
+      <button class="btn-select-all" id="selectAllBtn" type="button">&#9745; Pilih Semua</button>
+      <button class="btn-delete-sel" id="deleteSelBtn" type="button">&#128465; Hapus</button>
     </div>
 
     <!-- Tabel -->
@@ -116,16 +151,19 @@
   <section class="page" id="page-murid">
     <div class="page-header">
       <div>
-        <h2>Murid & QR</h2>
+        <h2>Murid &amp; QR</h2>
         <p class="page-sub">Tambah murid, lalu kirim QR ke masing-masing murid.</p>
       </div>
     </div>
 
     <div class="page-actions" style="margin-bottom:16px;gap:8px;flex-wrap:wrap">
+      <label for="mUrutan" class="sr-only">Urutan</label>
       <input type="number" id="mUrutan" class="input-date" placeholder="Urutan" style="width:90px">
+      <label for="mNama" class="sr-only">Nama lengkap</label>
       <input type="text" id="mNama" class="input-date" placeholder="Nama lengkap" style="width:200px">
+      <label for="mKelas" class="sr-only">Kelas</label>
       <input type="text" id="mKelas" class="input-date" placeholder="Kelas" style="width:100px">
-      <button class="btn-success" onclick="addMurid()">+ Tambah</button>
+      <button class="btn-success" id="addMuridBtn" type="button">+ Tambah</button>
     </div>
 
     <div class="table-wrap">
@@ -154,10 +192,12 @@
         <p class="page-sub" id="rekapRange">Pilih rentang tanggal untuk melihat rekap.</p>
       </div>
       <div class="page-actions">
+        <label for="rekapStart" class="sr-only">Tanggal awal</label>
         <input type="date" id="rekapStart" class="input-date">
+        <label for="rekapEnd" class="sr-only">Tanggal akhir</label>
         <input type="date" id="rekapEnd" class="input-date">
-        <button class="btn-secondary" onclick="loadRekap()">Tampilkan</button>
-        <button class="btn-success" onclick="exportRekap()">📥 Export Rekap</button>
+        <button class="btn-secondary" id="rekapBtn" type="button">Tampilkan</button>
+        <button class="btn-success" id="exportRekapBtn" type="button">&#128229; Export Rekap</button>
       </div>
     </div>
     <div class="table-wrap">
@@ -175,7 +215,7 @@
           </tr>
         </thead>
         <tbody id="rekapBody">
-          <tr><td colspan="8" class="empty-msg">Pilih rentang tanggal lalu klik "Tampilkan".</td></tr>
+          <tr><td colspan="8" class="empty-msg">Pilih rentang tanggal lalu klik &quot;Tampilkan&quot;.</td></tr>
         </tbody>
       </table>
     </div>
@@ -190,9 +230,11 @@
       </div>
     </div>
     <div class="page-actions" style="margin-bottom:16px;gap:8px;flex-wrap:wrap">
+      <label for="mJudul" class="sr-only">Judul materi</label>
       <input type="text" id="mJudul" class="input-date" placeholder="Judul materi" style="width:220px">
+      <label for="mIsi" class="sr-only">Isi materi</label>
       <input type="text" id="mIsi" class="input-date" placeholder="Isi / link / deskripsi" style="flex:1;min-width:180px">
-      <button class="btn-success" onclick="addMateri()">+ Simpan</button>
+      <button class="btn-success" id="addMateriBtn" type="button">+ Simpan</button>
     </div>
     <div class="table-wrap">
       <table class="data-table" id="materiTable">
@@ -216,14 +258,17 @@
     <div class="page-header">
       <div>
         <h2>Nilai</h2>
-        <p class="page-sub">Input nilai & lihat rata-rata tiap murid.</p>
+        <p class="page-sub">Input nilai &amp; lihat rata-rata tiap murid.</p>
       </div>
     </div>
     <div class="page-actions" style="margin-bottom:16px;gap:8px;flex-wrap:wrap">
-      <select id="nMurid" class="input-date" style="width:auto"><option value="">Pilih murid…</option></select>
+      <label for="nMurid" class="sr-only">Pilih murid</label>
+      <select id="nMurid" class="input-date" style="width:auto"><option value="">Pilih murid&hellip;</option></select>
+      <label for="nMapel" class="sr-only">Mata pelajaran</label>
       <input type="text" id="nMapel" class="input-date" placeholder="Mapel" style="width:120px">
+      <label for="nNilai" class="sr-only">Nilai 0 sampai 100</label>
       <input type="number" id="nNilai" class="input-date" placeholder="Nilai 0-100" style="width:100px" min="0" max="100">
-      <button class="btn-success" onclick="addNilai()">+ Simpan</button>
+      <button class="btn-success" id="addNilaiBtn" type="button">+ Simpan</button>
     </div>
     <div class="table-wrap">
       <table class="data-table" id="nilaiTable">
@@ -262,8 +307,8 @@
 </main>
 
 <!-- TOAST -->
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" aria-live="polite" role="status"></div>
 
-<script src="static/js/app.js?v=6"></script>
+<script src="static/js/app.js?v=10"></script>
 </body>
 </html>
