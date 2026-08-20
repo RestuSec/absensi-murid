@@ -1,14 +1,15 @@
-# 🏫 Sistem Absensi Murid — Yayasan Islam
+# RestuSec — Sistem Absensi Murid
 
-Sistem absensi murid dengan **Dashboard Web + Absen via QR**.
-Mendukung 3 unit: **MI**, **MTs**, **RA**.
+![RestuSec](backend/dashboard/static/img/logo.png)
+
+Sistem absensi murid dengan **Dashboard Web + Absen via QR** oleh **RestuSec**.
 
 ---
 
 ## 📁 Struktur Project
 
 ```
-absensi-guru/
+absensi-murid/
 ├── backend/
 │   ├── main.py          ← FastAPI API
 │   ├── serve.py         ← Entry point (API + Dashboard)
@@ -20,7 +21,8 @@ absensi-guru/
 │   ├── absen.html          ← Halaman absen web (dibuka lewat scan QR)
 │   └── static/
 │       ├── css/style.css
-│       └── js/app.js
+│       ├── js/app.js
+│       └── img/logo.png
 ├── env_loader.py        ← Loader .env tanpa dependency eksternal
 ├── start_all.bat        ← Launcher proses (Windows)
 ├── stop_all.bat         ← Stop semua proses
@@ -69,7 +71,7 @@ Dashboard bisa diakses di: **http://localhost:8000**
 
 ### 6. Jalankan satu-klik via tunnel (untuk akses dari HP/Internet)
 ```powershell
-cd C:\Users\Suran\absensi-murid
+cd C:\Users\Suran\Documents\absensi-murid
 .\start_jumat.bat
 ```
 Script otomatis: buka server + Cloudflare tunnel gratis → update `.env` → tampilkan URL publik.
@@ -81,11 +83,9 @@ Tiap start URL berubah, jadi **generate ulang QR murid** setelahnya.
 
 Akun admin dibuat otomatis dari `.env` saat server pertama kali jalan:
 
-| Username    | Env var          | Unit |
-|-------------|------------------|------|
-| `admin_mi`  | `ADMIN_MI_PASS`  | MI   |
-| `admin_mts` | `ADMIN_MTS_PASS` | MTs  |
-| `admin_ra`  | `ADMIN_RA_PASS`  | RA   |
+| Username | Env var      |
+|----------|--------------|
+| `admin`  | `ADMIN_PASS` |
 
 > **Penting:** Jangan pernah pakai password default / simpan password di file kode.
 > Password diambil dari `.env` (`.gitignore` sudah mengecualikannya dari git).
@@ -102,7 +102,7 @@ Akun admin dibuat otomatis dari `.env` saat server pertama kali jalan:
 
 ## 📊 Fitur Dashboard
 
-- ✅ Login per unit (MI / MTs / RA), username+password otomatis tersimpan
+- ✅ Login admin, username+password otomatis tersimpan
 - ✅ **Murid & QR**: tambah murid (nama, kelas, **urutan**), tampilkan QR, **unduh** QR, **kirim via WhatsApp**, dan **buat token baru** (🔄) kalau QR bocor
 - ✅ Urutan: daftar absensi & rekap diurutkan sesuai nomor **urutan** murid, bukan waktu input
 - ✅ Ganti tanggal → data langsung ke-load hari itu
@@ -118,9 +118,7 @@ Akun admin dibuat otomatis dari `.env` saat server pertama kali jalan:
 Edit file `.env` di root project, lalu restart server:
 
 ```env
-ADMIN_MI_PASS=password_baru_mi
-ADMIN_MTS_PASS=password_baru_mts
-ADMIN_RA_PASS=password_baru_ra
+ADMIN_PASS=password_baru
 ```
 
 Server otomatis mendeteksi password baru dan meng-update hash bcrypt di database
@@ -136,10 +134,10 @@ production, gunakan nginx sebagai reverse proxy ke port 8000.
 ### Deploy ke Railway (dari GitHub)
 
 1. Push repo ini ke GitHub.
-2. Di [Railway](https://railway.app), **New Project → Deploy from GitHub repo** → pilih `absensi-guru`.
+2. Di [Railway](https://railway.app), **New Project → Deploy from GitHub repo** → pilih `absensi-murid`.
 3. Tambahkan **Volume** (persistent) di service, lalu buat **variable** berikut di `Variables`:
    - `DB_PATH=/data/absensi.db` (arahkan ke mount volume — wajib, biar data tidak hilang saat redeploy)
-   - `SECRET_KEY`, `ADMIN_MI_PASS`, `ADMIN_MTS_PASS`, `ADMIN_RA_PASS`
+   - `SECRET_KEY`, `ADMIN_PASS`
    - `PUBLIC_URL=<URL Railway milikmu>`
    - `CORS_ORIGINS=<URL Railway milikmu>`
 4. Railway otomatis menjalankan `backend/serve.py` via `railway.json` dan memberi `PORT`.
