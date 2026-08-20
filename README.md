@@ -1,6 +1,6 @@
 # RestuSec — Sistem Absensi Murid
 
-![RestuSec](backend/dashboard/static/img/logo.png)
+<img src="backend/dashboard/static/img/logo.png" width="100" alt="RestuSec">
 
 Sistem absensi murid dengan **Dashboard Web + Absen via QR** oleh **RestuSec**.
 
