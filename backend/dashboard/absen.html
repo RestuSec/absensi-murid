@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
@@ -9,27 +9,27 @@
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     margin: 0; padding: 16px; min-height: 100vh;
     background:
-      radial-gradient(900px 500px at 10% -10%, rgba(59,130,246,.25), transparent 55%),
-      radial-gradient(800px 500px at 95% 110%, rgba(30,64,175,.30), transparent 55%),
-      #0B0F1A;
+      radial-gradient(900px 500px at 10% -10%, rgba(232,0,26,.16), transparent 55%),
+      radial-gradient(800px 500px at 95% 110%, rgba(139,0,16,.26), transparent 55%),
+      #050608;
     color: #E7ECF5;
     display: flex; align-items: center; justify-content: center;
   }
   .card {
-    background: linear-gradient(160deg, #141B30 0%, #101626 100%);
-    border: 1px solid #26314D;
+    background: linear-gradient(160deg, #150709 0%, #0D0406 100%);
+    border: 1px solid #3A1420;
     max-width: 400px; width: 100%; margin: 24px auto;
     padding: 28px 24px; border-radius: 16px; text-align: center;
-    box-shadow: 0 10px 30px rgba(30,64,175,.25);
-    animation: card-in .45s ease both;
+    box-shadow: 0 10px 30px rgba(232,0,26,.18);
   }
+  body.revealed .card { animation: card-in .45s ease both; }
   @keyframes card-in {
     from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   .logo { width: 64px; height: 64px; object-fit: contain; margin: 0 auto 8px; display: block;
-        filter: drop-shadow(0 4px 14px rgba(59,130,246,.55));
-        animation: logo-in .7s cubic-bezier(.2,.9,.3,1.2) both; }
+        filter: drop-shadow(0 4px 14px rgba(232,0,26,.50)); }
+  body.revealed .logo { animation: logo-in .7s cubic-bezier(.2,.9,.3,1.2) both; }
   @keyframes logo-in {
     from { opacity: 0; transform: scale(.5) translateY(-12px); }
     to   { opacity: 1; transform: scale(1) translateY(0); }
@@ -37,44 +37,65 @@
   h1 { font-size: 19px; margin: 0 0 4px; min-height: 1.3em; }
   .caret {
     display: inline-block; width: 3px; height: 1em;
-    background: #60A5FA; vertical-align: -2px; margin-left: 2px;
-    box-shadow: 0 0 8px rgba(96,165,250,.8);
+    background: #FF4D5E; vertical-align: -2px; margin-left: 2px;
+    box-shadow: 0 0 8px rgba(232,0,26,.8);
     animation: blink .8s step-end infinite;
   }
   @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
-  p.sub { color: #8FA0BD; font-size: 13px; margin: 0 0 20px; }
-  .who { background: rgba(59,130,246,.10); border: 1px solid #26314D; border-radius: 12px; padding: 14px; margin-bottom: 18px;
-        animation: who-in .5s ease .4s both; }
+  p.sub { color: #9C8F94; font-size: 13px; margin: 0 0 20px; }
+  .who { background: rgba(232,0,26,.08); border: 1px solid #3A1420; border-radius: 12px; padding: 14px; margin-bottom: 18px; }
+  body.revealed .who { animation: who-in .5s ease .4s both; }
   @keyframes who-in {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
   }
   .who .nm { font-size: 18px; font-weight: 700; }
-  .who .dt { color: #8FA0BD; font-size: 13px; margin-top: 4px; }
+  .who .dt { color: #9C8F94; font-size: 13px; margin-top: 4px; }
   button {
-    width: 100%; padding: 15px; font-size: 16px; font-weight: 600;
-    border-radius: 10px; border: none; margin-bottom: 10px; cursor: pointer; color: #fff;
+    width: 100%; padding: 14px; font-size: 15px; font-weight: 700;
+    letter-spacing: .3em; text-transform: uppercase;
+    font-family: Consolas, 'Courier New', monospace;
+    color: #FF4D5E;
+    background: linear-gradient(120deg, rgba(232,0,26,.12), rgba(232,0,26,.03) 45%, rgba(232,0,26,.12));
+    border: 1px solid rgba(232,0,26,.55);
+    margin-bottom: 12px; cursor: pointer;
     position: relative; overflow: hidden;
-    transition: transform .12s ease, box-shadow .2s ease;
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+    transition: transform .12s ease, box-shadow .2s ease, background .2s ease;
     will-change: transform;
   }
-  #hadir  { background: linear-gradient(135deg,#22C55E,#16A34A); box-shadow: 0 4px 18px rgba(34,197,94,.45); }
-  #izin   { background: linear-gradient(135deg,#F59E0B,#D97706); box-shadow: 0 4px 18px rgba(245,158,11,.40); }
-  #sakit  { background: linear-gradient(135deg,#EF4444,#DC2626); box-shadow: 0 4px 18px rgba(239,68,68,.40); }
+  /* garis scan hologram tipis */
+  button::before {
+    content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(232,0,26,.07) 3px 4px);
+    pointer-events: none;
+  }
   button::after {
     content: ""; position: absolute; inset: -50%;
     background: linear-gradient(120deg, transparent 40%, rgba(255,255,255,.35) 50%, transparent 60%);
     transform: translateX(-60%);
-    animation: shine 1.4s ease .9s 1; /* nyapu sekali pas halaman kebuka */
     pointer-events: none;
+  }
+  body.revealed button::after {
+    animation: shine 1.4s ease .9s 1; /* nyapu sekali pas boot selesai */
   }
   @keyframes shine {
     0%   { transform: translateX(-60%); }
     100% { transform: translateX(60%); }
   }
-  button:hover { transform: translateY(-2px); }
-  button:active { transform: scale(.97); transition-duration: .06s; }
-  #loc { font-size: 13px; color: #8FA0BD; margin: 12px 0; }
+  button:hover {
+    background: linear-gradient(120deg, rgba(232,0,26,.22), rgba(232,0,26,.08) 45%, rgba(232,0,26,.22));
+    box-shadow: 0 0 20px rgba(232,0,26,.35), inset 0 0 16px rgba(232,0,26,.12);
+  }
+  button:active {
+    transform: scale(.97); transition-duration: .06s;
+    background: rgba(232,0,26,.32);
+    box-shadow: 0 0 30px rgba(232,0,26,.55), inset 0 0 22px rgba(232,0,26,.25);
+  }
+  #batal { color: #9C8F94; border-color: #3A2A30; background: rgba(255,255,255,.03); }
+  #batal::before { display: none; }
+  #batal:hover { box-shadow: none; background: rgba(255,255,255,.06); }
+  #loc { font-size: 13px; color: #9C8F94; margin: 12px 0; }
   #result { margin-top: 12px; padding: 12px; border-radius: 10px; font-size: 15px; display: none; white-space: pre-line; }
   .ok { background: #0E2A1A; color: #4ADE80; animation: ok-in .45s cubic-bezier(.2,.9,.3,1.15) both; }
   .ok-hadir { box-shadow: 0 0 22px rgba(34,197,94,.35); color: #4ADE80; }
@@ -93,8 +114,182 @@
     .card, .ok, .err, button { animation: none !important; transition: none !important; }
   }
 </style>
+<style>
+  /* â”€â”€ Boot Screen RestuSec (ala Red Magic, custom) â”€â”€
+     Catatan: tanpa webfont eksternal karena CSP font-src 'self'. */
+
+  #boot {
+    position: fixed; inset: 0; height: 100vh; height: 100dvh;
+    background: #030508; overflow: hidden;
+    font-family: 'Bahnschrift', 'Segoe UI', system-ui, sans-serif;
+    z-index: 1000; color: #C8CDD6;
+    transition: opacity .6s ease;
+  }
+  #boot.done { opacity: 0; pointer-events: none; }
+
+  /* Scanline + vignette */
+  #boot::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px,
+      rgba(0,0,0,.18) 2px, rgba(0,0,0,.18) 4px);
+    pointer-events: none; z-index: 100;
+  }
+  #boot::after {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.75) 100%);
+    pointer-events: none; z-index: 99;
+  }
+
+  #boot .grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(#1C1F26 1px, transparent 1px),
+      linear-gradient(90deg, #1C1F26 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0; animation: b-grid 1s .3s forwards;
+  }
+  #boot .corner { position: absolute; width: 48px; height: 48px; opacity: 0; animation: b-fade .6s .8s forwards; }
+  #boot .corner::before, #boot .corner::after { content: ''; position: absolute; background: #E8001A; }
+  #boot .corner::before { width: 2px; height: 100%; }
+  #boot .corner::after  { width: 100%; height: 2px; }
+  #boot .tl { top: 20px; left: 20px; }
+  #boot .tr { top: 20px; right: 20px; transform: scaleX(-1); }
+  #boot .bl { bottom: 20px; left: 20px; transform: scaleY(-1); }
+  #boot .br { bottom: 20px; right: 20px; transform: scale(-1); }
+
+  #boot .signal { position: absolute; top: 24px; right: 24px; display: flex; gap: 5px; opacity: 0; animation: b-fade .4s 1s forwards; }
+  #boot .dot { width: 6px; height: 6px; border-radius: 50%; background: #E8001A; animation: b-pulse 1.2s infinite; }
+  #boot .dot:nth-child(2) { animation-delay: .15s; }
+  #boot .dot:nth-child(3) { animation-delay: .30s; }
+
+  #boot .stage {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  #boot .hex-wrap {
+    position: relative; width: 110px; height: 110px; margin-bottom: 28px;
+    opacity: 0; animation: b-pop .5s cubic-bezier(.22,1,.36,1) .5s forwards;
+  }
+  #boot .hex-wrap svg { width: 100%; height: 100%; }
+  #boot .brand {
+    position: relative;
+    font-size: clamp(46px, 13vw, 88px); font-weight: 700;
+    letter-spacing: .04em; text-transform: uppercase;
+    color: #EAECF0; line-height: 1;
+    opacity: 0; animation: b-up .6s cubic-bezier(.22,1,.36,1) .9s forwards;
+  }
+  #boot .brand .accent { color: #E8001A; }
+  #boot .brand::before, #boot .brand::after { content: attr(data-text); position: absolute; inset: 0; opacity: 0; }
+  #boot .brand::before { color: #FF1A35; clip-path: polygon(0 30%, 100% 30%, 100% 50%, 0 50%); animation: b-g1 4s 2s infinite; }
+  #boot .brand::after  { color: #00E5FF; clip-path: polygon(0 60%, 100% 60%, 100% 75%, 0 75%); animation: b-g2 4s 2.1s infinite; }
+
+  #boot .tagline {
+    margin-top: 10px; font-size: 12px; letter-spacing: .32em;
+    text-transform: uppercase; color: #3A3F4A;
+    opacity: 0; animation: b-fade .6s 1.4s forwards;
+  }
+  #boot .divider {
+    margin-top: 36px; width: min(320px, 80vw); height: 1px;
+    background: linear-gradient(90deg, transparent, #E8001A, transparent);
+    transform: scaleX(0); animation: b-line .6s cubic-bezier(.22,1,.36,1) 1.6s forwards;
+  }
+  #boot .progress-area { margin-top: 26px; width: min(280px, 76vw); opacity: 0; animation: b-fade .4s 1.8s forwards; }
+  #boot .progress-meta {
+    display: flex; justify-content: space-between;
+    font-family: Consolas, 'Courier New', monospace; font-size: 10px;
+    color: #3A3F4A; letter-spacing: .12em; margin-bottom: 8px;
+  }
+  #boot .pct { color: #E8001A; }
+  #boot .bar-track { width: 100%; height: 3px; background: #1C1F26; position: relative; overflow: hidden; }
+  #boot .bar-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #8B0010, #E8001A, #FF1A35);
+    box-shadow: 0 0 8px #E8001A;
+    animation: b-fill 3s 2s cubic-bezier(.4,0,.2,1) forwards;
+  }
+  #boot .bar-shine {
+    position: absolute; top: 0; width: 40px; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent);
+    animation: b-sweep 3s 2s ease-in-out forwards;
+  }
+  #boot .status-log {
+    margin-top: 18px; font-family: Consolas, 'Courier New', monospace;
+    font-size: 10px; color: #3A3F4A; letter-spacing: .08em;
+    min-height: 16px; text-align: center;
+    opacity: 0; animation: b-fade .4s 2.2s forwards;
+  }
+  #boot .status-log .ok { color: #4CAF50; }
+  #boot .status-log .warn { color: #E8001A; }
+  #boot .version {
+    position: absolute; bottom: 24px; right: 24px;
+    font-family: Consolas, 'Courier New', monospace; font-size: 10px;
+    color: #3A3F4A; letter-spacing: .12em;
+    opacity: 0; animation: b-fade .4s 3s forwards;
+  }
+
+  @media (max-width: 480px) {
+    #boot .corner { width: 36px; height: 36px; }
+    #boot .tl { top: 14px; left: 14px; } #boot .tr { top: 14px; right: 14px; }
+    #boot .bl { bottom: 14px; left: 14px; } #boot .br { bottom: 14px; right: 14px; }
+    #boot .hex-wrap { width: 92px; height: 92px; margin-bottom: 22px; }
+    #boot .tagline { font-size: 11px; letter-spacing: .26em; }
+    #boot .signal { top: 16px; right: 16px; }
+    #boot .version { bottom: 16px; right: 16px; }
+  }
+
+  @keyframes b-grid  { to { opacity: .4; } }
+  @keyframes b-fade  { to { opacity: 1; } }
+  @keyframes b-up    { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes b-pop   { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: scale(1); } }
+  @keyframes b-line  { to { transform: scaleX(1); } }
+  @keyframes b-fill  { 0% { width: 0%; } 20% { width: 18%; } 45% { width: 47%; } 70% { width: 72%; } 88% { width: 90%; } 100% { width: 100%; } }
+  @keyframes b-sweep { 0% { left: -40px; } 100% { left: 100%; } }
+  @keyframes b-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+  @keyframes b-g1 { 0%,95%,100% { opacity: 0; transform: none; } 96% { opacity: .7; transform: translate(-3px,1px); } 97% { opacity: 0; } 98% { opacity: .5; transform: translate(3px,-1px); } 99% { opacity: 0; } }
+  @keyframes b-g2 { 0%,95%,100% { opacity: 0; transform: none; } 96% { opacity: .5; transform: translate(4px,0); } 97% { opacity: 0; } 98% { opacity: .4; transform: translate(-2px,1px); } 99% { opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) { #boot { display: none; } }
+</style>
+<noscript><style>#boot{display:none}</style></noscript>
 </head>
 <body>
+  <!-- Boot Screen -->
+  <div id="boot">
+    <div class="grid-bg"></div>
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <div class="signal">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <div class="stage">
+      <div class="hex-wrap">
+        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="60,6 110,33 110,87 60,114 10,87 10,33" stroke="#E8001A" stroke-width="2" fill="none" opacity=".9"/>
+          <polygon points="60,18 98,40 98,80 60,102 22,80 22,40" stroke="#3A0008" stroke-width="1" fill="#0A0205"/>
+          <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
+            font-family="Rajdhani,sans-serif" font-weight="700" font-size="34"
+            fill="#E8001A" letter-spacing="2">RS</text>
+          <line x1="32" y1="66" x2="88" y2="66" stroke="#E8001A" stroke-width="1.5" opacity=".4"/>
+        </svg>
+      </div>
+      <div class="brand" data-text="RestuSec">Restu<span class="accent">Sec</span></div>
+      <div class="tagline">Sistem Absensi Digital</div>
+      <div class="divider"></div>
+      <div class="progress-area">
+        <div class="progress-meta">
+          <span>INITIALIZING SYSTEM</span>
+          <span class="pct" id="pct">0%</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill"></div>
+          <div class="bar-shine"></div>
+        </div>
+      </div>
+      <div class="status-log" id="log">&#9612;</div>
+    </div>
+    <div class="version">v1.0.0 &nbsp;&middot;&nbsp; BUILD 2025</div>
+  </div>
+
   <div class="card">
     <img class="logo" src="static/img/logo.png" alt="RestuSec">
     <h1 id="typeTitle"><span class="caret"></span></h1>
@@ -103,18 +298,20 @@
       <div class="nm" id="nm"></div>
       <div class="dt" id="dt"></div>
     </div>
-    <button id="hadir" type="button">&#9989; Hadir</button>
-    <button id="izin" type="button">&#128203; Izin</button>
-    <button id="sakit" type="button">&#127973; Sakit</button>
+    <button id="hadir" type="button">Hadir</button>
+    <button id="izin" type="button">Izin</button>
+    <button id="sakit" type="button">Sakit</button>
     <div id="confirm" style="display:none">
       <div id="confirmMsg" style="font-size:17px;font-weight:700;margin:10px 0 14px"></div>
-      <button id="kirim" style="background:linear-gradient(135deg,#3B82F6,#2563EB)">&#128228; Kirim</button>
-      <button id="batal" style="background:#26314D">Batal</button>
+      <button id="kirim">Kirim</button>
+      <button id="batal">Batal</button>
     </div>
     <div id="loc"></div>
     <div id="result"></div>
   </div>
 
-<script src="static/js/absen.js?v=18"></script>
+<script src="static/js/absen.js?v=21"></script>
+</body>
+</html>
 </body>
 </html>

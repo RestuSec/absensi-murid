@@ -7,6 +7,9 @@ backend/absensi.db
 
 # Log
 logs/
+*.log
+access.log
+qr_preview.png
 
 # Python
 __pycache__/

@@ -4,21 +4,22 @@ setlocal
 set PYTHONIOENCODING=utf-8
 
 echo ==========================================
-echo   ABSENSI MURID - YAYASAN ISLAM
+echo   ABSENSI MURID
 echo ==========================================
 echo.
 
-rem 1. Backend + Dashboard (port 8001, dari .env)
+rem 1. Backend + Dashboard (port 8001) - jalan background di konsol ini
 echo [1/2] Start Backend + Dashboard (port 8001)...
-start "Backend API :8001" cmd /k "cd /d %~dp0backend && python serve.py"
+cd /d "%~dp0backend"
+start /b "" "C:\Users\Suran\AppData\Local\Python\pythoncore-3.14-64\python.exe" serve.py
 
-rem 2. Tunnel Cloudflare (restusec.my.id)
+rem 2. Tunnel Cloudflare (restusec.my.id) - jalan background di konsol ini
 echo [2/2] Start Cloudflare Tunnel...
-start "Cloudflare Tunnel absensi" "" "C:\Program Files (x86)\cloudflared\cloudflared.exe" tunnel run absensi
+start /b "" "C:\Program Files (x86)\cloudflared\cloudflared.exe" tunnel run absensi
 
 echo.
-echo Semua proses dimulai.
+echo Semua proses dimulai di terminal ini.
 echo Dashboard: https://restusec.my.id
 echo Local:     http://localhost:8001
-echo Tutup masing-masing terminal untuk berhenti.
-timeout /t 5 >nul
+echo Terminal ini harus tetap terbuka (proses jalan di sini).
+echo Tekan Ctrl+C untuk berhenti semua.
