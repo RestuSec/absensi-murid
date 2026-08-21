@@ -82,13 +82,20 @@ function startPage(){
 }
 
 // ── Boot Screen controller (dipindah dari inline HTML karena CSP script-src 'self') ──
-function finishBoot(boot){
-  if (boot.dataset.done) return;
-  boot.dataset.done = 1;
+// Fase 2 = layout boot yang SAMA: elemen bawah fade → cahaya kedip + garis turun
+// → cahaya hilang → brand "RestuSec" tuing muncul. Tanpa overlay kedua.
+function phase2(boot){
+  boot.classList.add('phase2');
+  // cahaya selesai (~1.45s) → baru RestuSec muncul
+  setTimeout(() => boot.classList.add('showbrand'), 1450);
+}
+
+function finishAll(boot){
+  if (!boot.isConnected) return startPage();
   boot.classList.add('done');
   document.body.classList.add('revealed');
-  setTimeout(() => boot.remove(), 700);
   startPage();
+  setTimeout(() => boot.remove(), 700);
 }
 
 function runBoot(boot){
@@ -123,11 +130,14 @@ function runBoot(boot){
   const logEl = document.getElementById('log');
   msgs.forEach(m => setTimeout(() => { logEl.innerHTML = m[1]; }, m[0]));
 
-  setTimeout(() => finishBoot(boot), 6100);
+  // Fase 1 selesai (bar penuh @5s, log terakhir @5s) → langsung fase 2, tanpa jeda
+  setTimeout(() => phase2(boot), 5100);
+  // Fase 2 tampil ~2.6s → buka halaman absen
+  setTimeout(() => finishAll(boot), 7800);
 }
 
 // ── Entry point ──
 const bootEl = document.getElementById('boot');
 if (!bootEl) startPage();
-else if (matchMedia('(prefers-reduced-motion: reduce)').matches) finishBoot(bootEl);
+else if (matchMedia('(prefers-reduced-motion: reduce)').matches) finishAll(bootEl);
 else runBoot(bootEl);

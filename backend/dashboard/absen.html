@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Absensi &mdash; RestuSec</title>
+<link rel="icon" type="image/png" href="static/img/logo.png">
 <style>
   body {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -183,11 +184,6 @@
   #boot .brand::before { color: #FF1A35; clip-path: polygon(0 30%, 100% 30%, 100% 50%, 0 50%); animation: b-g1 4s 2s infinite; }
   #boot .brand::after  { color: #00E5FF; clip-path: polygon(0 60%, 100% 60%, 100% 75%, 0 75%); animation: b-g2 4s 2.1s infinite; }
 
-  #boot .tagline {
-    margin-top: 10px; font-size: 12px; letter-spacing: .32em;
-    text-transform: uppercase; color: #3A3F4A;
-    opacity: 0; animation: b-fade .6s 1.4s forwards;
-  }
   #boot .divider {
     margin-top: 36px; width: min(320px, 80vw); height: 1px;
     background: linear-gradient(90deg, transparent, #E8001A, transparent);
@@ -232,7 +228,6 @@
     #boot .tl { top: 14px; left: 14px; } #boot .tr { top: 14px; right: 14px; }
     #boot .bl { bottom: 14px; left: 14px; } #boot .br { bottom: 14px; right: 14px; }
     #boot .hex-wrap { width: 92px; height: 92px; margin-bottom: 22px; }
-    #boot .tagline { font-size: 11px; letter-spacing: .26em; }
     #boot .signal { top: 16px; right: 16px; }
     #boot .version { bottom: 16px; right: 16px; }
   }
@@ -249,6 +244,48 @@
   @keyframes b-g2 { 0%,95%,100% { opacity: 0; transform: none; } 96% { opacity: .5; transform: translate(4px,0); } 97% { opacity: 0; } 98% { opacity: .4; transform: translate(-2px,1px); } 99% { opacity: 0; } }
 
   @media (prefers-reduced-motion: reduce) { #boot { display: none; } }
+
+  /* ── Boot fase 2: garis lurus vertikal dari ATAS nembus logo sampai bawah ── */
+  #boot .beam {
+    position: absolute; left: 50%; top: 0;
+    width: 1px; height: 0; opacity: 0;
+    background: linear-gradient(180deg, rgba(232,0,26,0) 0%, #FF1A35 35%, #FFF 90%, #E8001A 100%);
+    box-shadow: 0 0 12px rgba(232,0,26,.9);
+    transform: translateX(-50%);
+  }
+  /* percikan poing menempel di tengah logo (pseudo-element hex-wrap) */
+  #boot .hex-wrap::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.85), rgba(232,0,26,.4) 45%, transparent 70%);
+    transform: translate(-50%, -50%) scale(.2);
+    opacity: 0; pointer-events: none;
+  }
+  #boot.phase2 .beam {
+    z-index: 6; opacity: 1;
+    animation: b-vshoot .55s cubic-bezier(.22,1,.36,1) forwards,
+               b-kedip .8s steps(1,end) .55s forwards,
+               b-fadeout .35s ease 1.05s forwards;
+  }
+  #boot.phase2 .hex-wrap::after { animation: b-poing .7s ease-out .6s forwards; }
+  #boot.phase2 .divider, #boot.phase2 .progress-area,
+  #boot.phase2 .status-log, #boot.phase2 .signal, #boot.phase2 .version {
+    opacity: 0 !important; transition: opacity .35s ease;
+  }
+  /* brand disembunyikan saat cahaya, muncul tuing setelah cahaya hilang */
+  #boot.phase2:not(.showbrand) .brand { opacity: 0 !important; }
+  #boot.phase2.showbrand .brand {
+    animation: b-tuing .55s cubic-bezier(.2,.9,.3,1.4) both;
+  }
+  #boot.phase2 .hex-wrap {
+    animation: b-tuing .55s cubic-bezier(.2,.9,.3,1.4) .15s both;
+    filter: drop-shadow(0 0 24px rgba(232,0,26,.7));
+  }
+  @keyframes b-vshoot { to { height: 105vh; } }
+  @keyframes b-poing  { 0% { opacity: 0; transform: translate(-50%,-50%) scale(.2); } 30% { opacity: .95; } 100% { opacity: 0; transform: translate(-50%,-50%) scale(6); } }
+  @keyframes b-kedip  { 0% { opacity: 1; } 25% { opacity: .15; } 50% { opacity: 1; } 70% { opacity: .25; } 100% { opacity: 1; } }
+  @keyframes b-fadeout{ to { opacity: 0; } }
+  @keyframes b-tuing  { 0% { opacity: 0; transform: scale(.4); } 60% { opacity: 1; transform: scale(1.12); } 100% { opacity: 1; transform: scale(1); } }
 </style>
 <noscript><style>#boot{display:none}</style></noscript>
 </head>
@@ -273,7 +310,6 @@
         </svg>
       </div>
       <div class="brand" data-text="RestuSec">Restu<span class="accent">Sec</span></div>
-      <div class="tagline">Sistem Absensi Digital</div>
       <div class="divider"></div>
       <div class="progress-area">
         <div class="progress-meta">
@@ -288,6 +324,7 @@
       <div class="status-log" id="log">&#9612;</div>
     </div>
     <div class="version">v1.0.0 &nbsp;&middot;&nbsp; BUILD 2025</div>
+    <div class="beam"></div>
   </div>
 
   <div class="card">
@@ -310,7 +347,7 @@
     <div id="result"></div>
   </div>
 
-<script src="static/js/absen.js?v=21"></script>
+<script src="static/js/absen.js?v=25"></script>
 </body>
 </html>
 </body>

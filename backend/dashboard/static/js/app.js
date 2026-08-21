@@ -61,6 +61,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('exportRekapBtn').addEventListener('click', exportRekap);
   document.getElementById('addMateriBtn').addEventListener('click', addMateri);
   document.getElementById('addNilaiBtn').addEventListener('click', addNilai);
+  document.getElementById('pfUploadBtn').addEventListener('click', pfUpload);
 
   loadAbsensi();
   loadStats();
@@ -73,11 +74,12 @@ function showPage(page, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
   if (el) el.classList.add('active');
-  const titles = { absensi: 'Data Absensi', murid: 'Murid & QR', rekap: 'Rekap', materi: 'Materi', nilai: 'Nilai' };
+  const titles = { absensi: 'Data Absensi', murid: 'Murid & QR', rekap: 'Rekap', materi: 'Materi', nilai: 'Nilai', portfolio: 'Portfolio' };
   document.getElementById('pageTitle').textContent = titles[page] || 'Absensi';
   if (page === 'murid') loadMurid();
   if (page === 'materi') loadMateri();
   if (page === 'nilai') { loadMuridOptions(); loadNilai(); loadRata2(); }
+  if (page === 'portfolio') loadPortfolio();
   closeSidebar();
 }
 
@@ -697,6 +699,46 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[c]);
+}
+
+/* ── Portfolio galeri ── */
+async function loadPortfolio() {
+  const grid = document.getElementById('pfGrid');
+  if (!grid) return;
+  const res = await apiFetch('/api/portfolio/list');
+  if (!res) return;
+  const files = await res.json();
+  if (!Array.isArray(files) || !files.length) {
+    grid.innerHTML = '<p class="empty-msg">Belum ada foto/video. Upload pertamamu!</p>';
+    return;
+  }
+  grid.innerHTML = files.map(f => `
+    <div style="border:1px solid var(--line);position:relative;overflow:hidden">
+      ${/\.(mp4|webm)$/i.test(f)
+        ? `<video src="static/img/portfolio/${esc(f)}" muted playsinline style="width:100%;aspect-ratio:16/10;object-fit:cover"></video>`
+        : `<img src="static/img/portfolio/${esc(f)}" alt="" loading="lazy" style="width:100%;aspect-ratio:16/10;object-fit:cover;display:block">`}
+      <button class="btn-logout" type="button" data-del="${esc(f)}" title="Hapus" style="position:absolute;top:6px;right:6px;padding:4px 8px;font-size:12px">&#10005;</button>
+    </div>`).join('');
+  grid.querySelectorAll('[data-del]').forEach(b =>
+    b.addEventListener('click', async () => {
+      if (!confirm('Hapus file ini dari landing page?')) return;
+      const res = await apiFetch('/api/portfolio/' + b.dataset.del, { method: 'DELETE' });
+      if (res && res.ok) { showToast('File dihapus'); loadPortfolio(); }
+    }));
+}
+
+async function pfUpload() {
+  const inp = document.getElementById('pfFile');
+  const f = inp.files && inp.files[0];
+  if (!f) { showToast('Pilih file dulu'); return; }
+  const fd = new FormData();
+  fd.append('file', f);
+  showToast('Mengupload...');
+  const res = await apiFetch('/api/portfolio/upload', { method: 'POST', body: fd });
+  if (!res) return;
+  const j = await res.json().catch(() => ({}));
+  if (res.ok) { showToast('Berhasil masuk ke website!'); inp.value = ''; loadPortfolio(); }
+  else showToast(j.detail || 'Gagal upload');
 }
 
 function formatTanggal(tgl) {

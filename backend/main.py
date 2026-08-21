@@ -838,3 +838,43 @@ def delete_nilai(nilai_id: int, payload: dict = Depends(verify_token)):
     if not deleted:
         raise HTTPException(status_code=404, detail="Nilai tidak ditemukan")
     return {"ok": True}
+
+# ── Portfolio galeri (landing page) ─────────────────────────────────────────
+from fastapi import UploadFile, File
+
+PORTFOLIO_DIR = os.path.join(os.path.dirname(__file__), "dashboard", "static", "img", "portfolio")
+os.makedirs(PORTFOLIO_DIR, exist_ok=True)
+PORTFOLIO_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".mp4", ".webm"}
+
+@app.get("/api/portfolio/list")
+def portfolio_list():
+    try:
+        return sorted(
+            f for f in os.listdir(PORTFOLIO_DIR)
+            if os.path.splitext(f)[1].lower() in PORTFOLIO_EXT
+        )
+    except FileNotFoundError:
+        return []
+
+@app.post("/api/portfolio/upload")
+async def portfolio_upload(file: UploadFile = File(...), payload: dict = Depends(verify_token)):
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in PORTFOLIO_EXT:
+        raise HTTPException(status_code=400, detail="Format harus jpg/png/gif/webp/mp4/webm")
+    data = await file.read()
+    if len(data) > 15 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Maksimal 15MB")
+    name = f"{int(time())}{ext}"
+    with open(os.path.join(PORTFOLIO_DIR, name), "wb") as f:
+        f.write(data)
+    return {"ok": True, "name": name}
+
+@app.delete("/api/portfolio/{name}")
+def portfolio_delete(name: str, payload: dict = Depends(verify_token)):
+    if "/" in name or "\\" in name or ".." in name:
+        raise HTTPException(status_code=400, detail="Nama file tidak valid")
+    path = os.path.join(PORTFOLIO_DIR, name)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="File tidak ditemukan")
+    os.remove(path)
+    return {"ok": True}

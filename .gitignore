@@ -27,3 +27,6 @@ Thumbs.db
 .DS_Store
 
 ngrok.yml
+
+# Konten upload user (foto/video portfolio)
+backend/dashboard/static/img/portfolio/

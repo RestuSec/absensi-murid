@@ -23,6 +23,10 @@ app.mount(
 def serve_login():
     return FileResponse(os.path.join(DASHBOARD_DIR, "login.html"))
 
+@app.get("/portofolio", include_in_schema=False)
+def serve_portofolio():
+    return FileResponse(os.path.join(DASHBOARD_DIR, "landing.html"))
+
 @app.get("/dashboard", include_in_schema=False)
 @app.get("/index", include_in_schema=False)
 def serve_dashboard():
