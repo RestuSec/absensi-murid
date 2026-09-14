@@ -21,6 +21,14 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 import io
 
 from database import get_conn, init_db, seed_admin, new_token
+from auth_seed import (
+    generate_seed_phrase, build_mapping, hash_seed, verify_seed,
+    generate_recovery_key, hash_recovery_key, verify_recovery_key,
+    generate_challenge
+)
+from database import (
+    get_admin_seed_data, get_all_admin_seed_data, clear_admin_seed, setup_seed_and_key
+)
 
 # ── Config ──────────────────────────────────────────────────────────────────
 SECRET_KEY = os.getenv("SECRET_KEY", "")
@@ -838,6 +846,128 @@ def delete_nilai(nilai_id: int, payload: dict = Depends(verify_token)):
     if not deleted:
         raise HTTPException(status_code=404, detail="Nilai tidak ditemukan")
     return {"ok": True}
+
+# ── Session store untuk challenge login ──────────────────────────────────────
+_temp_sessions = {}
+
+# ── Auth Seed & Recovery Endpoints ───────────────────────────────────────────
+
+@app.post("/api/admin/setup-seed-and-key")
+def setup_seed_and_key_endpoint(payload: dict = Depends(verify_token)):
+    """
+    Setup seed phrase DAN recovery key sekaligus.
+    Hanya admin yang sudah login yang bisa akses ini.
+    """
+    seed = generate_seed_phrase()
+    seed_str = " ".join(seed)
+    mapping = build_mapping(seed)
+    recovery_key=generate_recovery_key(64)
+    
+    setup_seed_and_key(
+        username=payload["sub"],
+        seed=seed,
+        recovery_key=recovery_key,
+        mapping=mapping
+    )
+    
+    return {
+        "message": "Seed phrase dan Recovery Key berhasil dibuat!",
+        "seed_phrase": seed_str,
+        "mapping": [[m[0], m[1], m[2]] for m in mapping],
+        "recovery_key": recovery_key,
+        "warning": "⚠️ SIMPAN RECOVERY KEY DI FLASHDISK! Key ini TIDAK akan expired."
+    }
+
+@app.post("/api/login/challenge")
+def login_challenge(form: OAuth2PasswordRequestForm = Depends()):
+    """Step 1: Generate challenge berdasarkan username."""
+    import uuid
+    username = form.username
+    admin_data = get_admin_seed_data(username)
+    
+    if not admin_data or not admin_data["mapping"]:
+        raise HTTPException(400, "User belum setup seed phrase.")
+    
+    challenge = generate_challenge(admin_data["mapping"])
+    session_token=str(uuid.uuid4())[:16]
+    
+    _temp_sessions[session_token] = {
+        "username": username,
+        "challenge_answer": challenge["answer"],
+        "mapping_index": challenge["seed_index"],
+        "attempts": 0,
+    }
+    
+    return {
+        "question": challenge["question"],
+        "session_token": session_token,
+        "hint": "Jawablah sesuai yang kamu hafal."
+    }
+
+@app.post("/api/login/verify-challenge")
+def verify_challenge_endpoint(data: dict):
+    """Step 2: Verifikasi jawaban challenge."""
+    import time
+    session_token = data.get("session_token", "")
+    answer = data.get("answer", "").strip().lower()
+    session = _temp_sessions.get(session_token)
+    
+    if not session:
+        raise HTTPException(400, "Session expired. Login lagi.")
+    if session["attempts"] >= 3:
+        del _temp_sessions[session_token]
+        raise HTTPException(429, "Terlalu banyak salah.")
+    
+    if answer == session["challenge_answer"]:
+        session["attempts"] += 1
+        return {"success": True}
+    else:
+        session["attempts"] += 1
+        raise HTTPException(401, "Jawaban salah.")
+
+@app.post("/api/login/verify-seed")
+def verify_seed_login(data: dict):
+    """Step 3: Verifikasi seed phrase."""
+    session_token = data.get("session_token", "")
+    seed_phrase = data.get("seed_phrase", "").strip()
+    session = _temp_sessions.get(session_token)
+    
+    if not session:
+        raise HTTPException(400, "Session tidak valid.")
+    
+    admin_data = get_admin_seed_data(session["username"])
+    if not admin_data or not admin_data["seed_hash"]:
+        raise HTTPException(404, "Data seed tidak ditemukan.")
+    
+    if verify_seed(admin_data["seed_hash"], seed_phrase):
+        token = create_token({"sub": session["username"], "unit": admin_data["unit"]})
+        del _temp_sessions[session_token]
+        return {"access_token": token, "token_type": "bearer", "unit": admin_data["unit"]}
+    else:
+        raise HTTPException(401, "Seed phrase salah.")
+
+@app.post("/api/login/recovery")
+def login_recovery(data: dict):
+    """
+    Login fallback pakai recovery key.
+    RECOVERY KEY TIDAK EXPIRED - bisa dipakai kapan saja.
+    """
+    recovery_key_input = data.get("recovery_key", "").strip()
+    if not recovery_key_input or len(recovery_key_input) < 32:
+        raise HTTPException(400, "Recovery key tidak valid.")
+    
+    all_admins = get_all_admin_seed_data()
+    for admin in all_admins:
+        if admin["recovery_key_hash"] and verify_recovery_key(
+            admin["recovery_key_hash"], recovery_key_input
+        ):
+            token = create_token({"sub": admin["username"], "unit": admin["unit"]})
+            return {
+                "access_token": token, "token_type": "bearer",
+                "unit": admin["unit"], "username": admin["username"],
+                "message": "Login berhasil pakai recovery key."
+            }
+    raise HTTPException(401, "Recovery key tidak ditemukan.")
 
 # ── Portfolio galeri (landing page) ─────────────────────────────────────────
 from fastapi import UploadFile, File

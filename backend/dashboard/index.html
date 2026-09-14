@@ -52,6 +52,9 @@
     <a class="nav-item" href="#" data-page="portfolio">
       <span class="nav-icon">&#128247;</span> Portfolio
     </a>
+    <a class="nav-item" href="#" data-page="security">
+      <span class="nav-icon">&#128273;</span> Keamanan (Seed)
+    </a>
   </nav>
   <div class="sidebar-footer">
     <button class="btn-logout" id="logoutBtn" type="button">&#128682; Keluar</button>
@@ -306,6 +309,65 @@
           <tr><td colspan="5" class="empty-msg">Belum ada data.</td></tr>
         </tbody>
       </table>
+    </div>
+  </section>
+
+  <!-- PAGE: Keamanan (Seed & Recovery Key) -->
+  <section class="page" id="page-security">
+    <div class="page-header">
+      <div>
+        <h2>🔐 Keamanan Seed &amp; Recovery Key</h2>
+        <p class="page-sub">Generate seed phrase (12 kata) dan recovery key. Recovery key TIDAK akan expired.</p>
+      </div>
+    </div>
+
+    <div class="security-setup-box">
+      <div class="security-info">
+        <h3>⚠️ PENTING</h3>
+        <ul>
+          <li><strong>Seed phrase</strong> (12 kata) — hafal di otak untuk login challenge-response</li>
+          <li><strong>Mapping</strong> — hafal: nomor berapa itu barang apa</li>
+          <li><strong>Recovery key</strong> (64 karakter) — <strong>SIMPAN DI FLASHDISK!</strong> (TIDAK EXPIRED)</li>
+        </ul>
+      </div>
+
+      <div class="security-actions">
+        <button class="btn-success" id="generateSeedBtn" type="button">
+          🎲 Generate Seed &amp; Recovery Key
+        </button>
+      </div>
+
+      <div id="seedResultBox" style="display:none; margin-top:20px; padding:16px; border:1px solid #ddd; border-radius:8px;">
+        <h4>✅ Berhasil Generate!</h4>
+        
+        <div class="seed-phrase-block">
+          <label><strong>Seed Phrase (12 kata):</strong></label>
+          <input type="text" id="seedPhraseOutput" readonly style="width:100%; padding:10px; font-size:1.1em;">
+        </div>
+
+        <div class="mapping-block">
+          <label><strong>Mapping (nomor → barang):</strong></label>
+          <div id="mappingOutput" style="margin-top:8px; font-size:0.95em;"></div>
+        </div>
+
+        <div class="recovery-block">
+          <label><strong>Recovery Key (simpan di flashdisk):</strong></label>
+          <input type="text" id="recoveryKeyOutput" readonly style="width:100%; padding:8px; font-family:monospace; font-size:0.9em; color:#c00;">
+          <button class="btn-secondary" id="copyRecoveryKeyBtn" type="button">📋 Copy ke Clipboard</button>
+          <small style="color:#c00;">⚠️ Copy ke flashdisk SEKARANG! Key ini TIDAK akan expired.</small>
+        </div>
+
+        <div class="seed-warning">
+          <p style="color:#c00; font-weight:bold;">⚠️ JANGAN LUPA KERJAKAN:</p>
+          <ul>
+            <li>Hafal seed phrase di otak</li>
+            <li>Hafal mapping (nomor 1 = rumah, dst.)</li>
+            <li>Copy recovery key ke flashdisk</li>
+          </ul>
+        </div>
+      </div>
+
+      <div id="seedErrorBox" style="display:none; margin-top:15px; padding:12px; background:#fee; border:1px solid #c00; border-radius:6px; color:#c00;"></div>
     </div>
   </section>
 

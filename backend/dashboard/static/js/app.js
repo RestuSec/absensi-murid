@@ -62,6 +62,8 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('addMateriBtn').addEventListener('click', addMateri);
   document.getElementById('addNilaiBtn').addEventListener('click', addNilai);
   document.getElementById('pfUploadBtn').addEventListener('click', pfUpload);
+  document.getElementById('generateSeedBtn').addEventListener('click', handleGenerateSeed);
+  document.getElementById('copyRecoveryKeyBtn').addEventListener('click', copyRecoveryKey);
 
   loadAbsensi();
   loadStats();
@@ -74,12 +76,15 @@ function showPage(page, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`page-${page}`).classList.add('active');
   if (el) el.classList.add('active');
-  const titles = { absensi: 'Data Absensi', murid: 'Murid & QR', rekap: 'Rekap', materi: 'Materi', nilai: 'Nilai', portfolio: 'Portfolio' };
+  const titles = { absensi: 'Data Absensi', murid: 'Murid & QR', rekap: 'Rekap', materi: 'Materi', nilai: 'Nilai', portfolio: 'Portfolio', security: 'Keamanan (Seed)' };
   document.getElementById('pageTitle').textContent = titles[page] || 'Absensi';
   if (page === 'murid') loadMurid();
   if (page === 'materi') loadMateri();
   if (page === 'nilai') { loadMuridOptions(); loadNilai(); loadRata2(); }
   if (page === 'portfolio') loadPortfolio();
+  if (page === 'security') {
+    document.getElementById('pageTitle').textContent = '🔐 Keamanan Seed';
+  }
   closeSidebar();
 }
 
@@ -745,4 +750,65 @@ function formatTanggal(tgl) {
   if (!tgl) return '-';
   const d = new Date(tgl + 'T00:00:00');
   return d.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+/* ── Keamanan: Generate Seed & Recovery Key ── */
+async function handleGenerateSeed() {
+  const btn = document.getElementById('generateSeedBtn');
+  const errBox = document.getElementById('seedErrorBox');
+  const resultBox = document.getElementById('seedResultBox');
+  
+  btn.textContent = 'Menggenerate...';
+  btn.disabled = true;
+  errBox.style.display = 'none';
+  resultBox.style.display = 'none';
+
+  try {
+    const res = await apiFetch('/api/admin/setup-seed-and-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res) return;
+    const data = await res.json();
+
+    if (res.ok) {
+      // Tampilkan hasil
+      document.getElementById('seedPhraseOutput').value = data.seed_phrase;
+      document.getElementById('mappingOutput').innerHTML = 
+        data.mapping.map(m => 
+          `<div><strong>${m[0]}</strong> → ${esc(m[2])} <small>(${esc(m[1])})</small></div>`
+        ).join('');
+      document.getElementById('recoveryKeyOutput').value = data.recovery_key;
+      
+      resultBox.style.display = 'block';
+      showToast('Seed & Recovery Key berhasil di-generate!');
+    } else {
+      errBox.textContent = data.detail || 'Gagal generate seed.';
+      errBox.style.display = 'block';
+    }
+  } catch (e) {
+    errBox.textContent = 'Gagal terhubung ke server.';
+    errBox.style.display = 'block';
+  } finally {
+    btn.textContent = '🎲 Generate Seed & Recovery Key';
+    btn.disabled = false;
+  }
+}
+
+function copyRecoveryKey() {
+  const keyInput = document.getElementById('recoveryKeyOutput');
+  keyInput.select();
+  keyInput.setSelectionRange(0, 99999);
+  try {
+    navigator.clipboard.writeText(keyInput.value).then(() => {
+      showToast('Recovery Key berhasil dicopy!');
+    }).catch(() => {
+      // Fallback lama
+      document.execCommand('copy');
+      showToast('Recovery Key berhasil dicopy!');
+    });
+  } catch {
+    document.execCommand('copy');
+    showToast('Recovery Key berhasil dicopy!');
+  }
 }

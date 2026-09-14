@@ -2,6 +2,8 @@ import secrets
 import sqlite3
 import os
 import sys
+import json
+from typing import List
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__))))
 from env_loader import load_env
@@ -131,6 +133,9 @@ def init_db():
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
             unit TEXT NOT NULL CHECK(unit IN ('MI', 'MTs', 'RA', 'ALL')),
+            seed_hash TEXT,
+            mapping TEXT,
+            recovery_key_hash TEXT,
             created_at TEXT DEFAULT (datetime('now', 'localtime'))
         )
     """)
@@ -204,3 +209,78 @@ def seed_admin():
 if __name__ == "__main__":
     init_db()
     seed_admin()
+
+# ── Seed & Recovery Key Functions ────────────────────────────────────────────
+def setup_seed_and_key(username: str, seed: List[str], recovery_key: str, mapping: List):
+    """
+    Simpan seed phrase, mapping, dan recovery key ke database.
+    Dipanggil sekali saat setup.
+    """
+    from auth_seed import hash_seed as _hash_seed, hash_recovery_key as _hash_recovery_key
+    seed_hash = _hash_seed(seed)
+    recovery_hash = _hash_recovery_key(recovery_key)
+    mapping_json = json.dumps(mapping)
+    
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE admin 
+        SET seed_hash = ?, mapping = ?, recovery_key_hash = ?
+        WHERE username = ?
+    """, (seed_hash, mapping_json, recovery_hash, username))
+    conn.commit()
+    conn.close()
+
+def get_admin_seed_data(username: str) -> dict:
+    """Ambil seed_hash, mapping, recovery_key_hash untuk user."""
+    import json as _json
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT username, seed_hash, mapping, recovery_key_hash, unit 
+        FROM admin WHERE username = ?
+    """, (username,))
+    row = cur.fetchone()
+    conn.close()
+    
+    if row:
+        return {
+            "username": row["username"],
+            "seed_hash": row["seed_hash"],
+            "mapping": _json.loads(row["mapping"]) if row["mapping"] else None,
+            "recovery_key_hash": row["recovery_key_hash"],
+            "unit": row["unit"]
+        }
+    return None
+
+def get_all_admin_seed_data() -> List[dict]:
+    """Ambil semua data seed admin (untuk recovery login)."""
+    import json as _json
+    from typing import List
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT username, seed_hash, mapping, recovery_key_hash, unit 
+        FROM admin
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    
+    return [{
+        "username": r["username"],
+        "seed_hash": r["seed_hash"],
+        "mapping": _json.loads(r["mapping"]) if r["mapping"] else None,
+        "recovery_key_hash": r["recovery_key_hash"],
+        "unit": r["unit"]
+    } for r in rows]
+
+def clear_admin_seed(username: str):
+    """Hapus seed data (kalau mau reset)."""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE admin SET seed_hash = NULL, mapping = NULL, recovery_key_hash = NULL
+        WHERE username = ?
+    """, (username,))
+    conn.commit()
+    conn.close()

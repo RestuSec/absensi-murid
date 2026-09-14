@@ -1,4 +1,5 @@
 fastapi>=0.110
+argon2-cffi>=23.1
 uvicorn>=0.29
 python-jose[cryptography]>=3.3
 passlib>=1.7.4
