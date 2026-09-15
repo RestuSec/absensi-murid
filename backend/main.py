@@ -849,6 +849,8 @@ def delete_nilai(nilai_id: int, payload: dict = Depends(verify_token)):
 
 # ── Session store untuk challenge login ──────────────────────────────────────
 _temp_sessions = {}
+_temp_session_max = 100
+_temp_session_ttl = 300  # 5 menit
 
 # ── Auth Seed & Recovery Endpoints ───────────────────────────────────────────
 
@@ -925,6 +927,13 @@ def seed_challenge3(payload: dict = Depends(verify_token)):
     masing-masing dibawa daftar kata campur (benar + pengecoh)."""
     import random as _random
     import uuid
+    import time as _time
+    now = _time.time()
+    stale = [k for k, v in _temp_sessions.items() if now - v.get("ts", 0) > _temp_session_ttl]
+    for k in stale:
+        del _temp_sessions[k]
+    if len(_temp_sessions) >= _temp_session_max:
+        raise HTTPException(429, "Terlalu banyak sesi aktif. Coba lagi nanti.")
     admin_data = get_admin_seed_data(payload["sub"])
     if not admin_data or not admin_data["mapping"]:
         raise HTTPException(400, "Belum ada seed. Generate dulu.")
@@ -942,6 +951,7 @@ def seed_challenge3(payload: dict = Depends(verify_token)):
         "username": payload["sub"],
         "answers": {pos + 1: seed_words[pos] for pos in positions},
         "attempts": 0,
+        "ts": now,
     }
     return {"challenge_id": challenge_id, "questions": questions}
 
@@ -1009,7 +1019,6 @@ def verify_challenge_endpoint(data: dict):
         raise HTTPException(429, "Terlalu banyak salah.")
     
     if answer == session["challenge_answer"]:
-        session["attempts"] += 1
         return {"success": True}
     else:
         session["attempts"] += 1
