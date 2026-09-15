@@ -14,13 +14,13 @@ with open(BIP39_PATH, "r", encoding="utf-8") as _f:
     WORDLIST = [w for w in (l.strip() for l in _f) if w]
 assert len(WORDLIST) == 2048, f"wordlist harus 2048 kata, ternyata {len(WORDLIST)}"
 
-# ── Mapping Barang (bantuan hafalan nomor → barang rumah tangga) ─────────────
+# ── Mapping Items (bantuan hafalan nomor → item rumah tangga, bahasa Inggris) ─
 ITEMS = [
-    "rumah", "kamar", "kasur", "meja", "kursi", "lemari", "pintu",
-    "jendela", "lampu", "kulkas", "oven", "tv", "telepon", "gelas",
-    "cangkir", "sendok", "garpu", "alarm", "sepeda", "mobil", "kipas",
+    "house", "room", "bed", "table", "chair", "wardrobe", "door",
+    "window", "lamp", "fridge", "oven", "tv", "phone", "glass",
+    "cup", "spoon", "fork", "alarm", "bicycle", "car", "fan",
     "charger", "mouse", "keyboard", "monitor", "cpu", "printer",
-    "speaker", "gorden", "kalem", "beranda", "halaman", "pekarangan"
+    "speaker", "curtain", "clamp", "porch", "yard", "garden"
 ]
 
 ph = PasswordHasher()
