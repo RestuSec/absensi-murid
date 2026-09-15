@@ -1,88 +1,41 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login &mdash; RestuSec</title>
-    <meta name="robots" content="noindex, nofollow">
-    <link rel="icon" type="image/png" href="static/img/logo.png">
-    <link rel="stylesheet" href="static/css/style.css?v=17">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login &mdash; RestuSec</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="static/img/logo.png">
+<link rel="stylesheet" href="static/css/style.css?v=17">
 </head>
 <body class="login-page">
 
 <div class="login-card">
   <div class="login-logo">
-    <img class="logo-img" src="static/img/logo.png" alt="Logo RestuSec" width="84" height="84">
+<img class="logo-img" src="static/img/logo.png" alt="Logo RestuSec" width="84" height="84">
     <h1>RestuSec</h1>
-    <p>Absensi Murid &mdash; Login Aman</p>
+    <p>Absensi Murid</p>
   </div>
 
-  <!-- STEP 1: Username -->
-  <div id="step1">
-    <form id="loginForm">
-      <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" id="username" placeholder="Masukkan username" autocomplete="username" required>
-      </div>
-      <button type="submit" class="btn-primary" id="loginBtn">Lanjut →</button>
-      <div id="loginError" class="error-msg" style="display:none"></div>
-    </form>
-  </div>
-
-  <!-- STEP 2: Challenge -->
-  <div id="step2" style="display:none">
-    <div class="challenge-box">
-      <h3>❓ Pertanyaan Keamanan</h3>
-      <p id="challengeQuestion" style="font-size:1.1em; font-weight:bold; margin:15px 0;">Tunggu...</p>
+  <form id="loginForm">
+    <div class="form-group">
+      <label for="username">Username</label>
+      <input type="text" id="username" placeholder="Masukkan username" autocomplete="username" required>
     </div>
-    <form id="challengeForm">
-      <div class="form-group">
-        <label for="challengeAnswer">Jawaban</label>
-        <input type="text" id="challengeAnswer" placeholder="Tulis jawabanmu" autocomplete="off" required>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <div class="input-wrap">
+        <input type="password" id="password" placeholder="Masukkan password" autocomplete="current-password" required>
+<button type="button" class="toggle-pw" id="togglePwBtn" aria-label="Tampilkan sandi">&#128065;</button>
       </div>
-      <button type="submit" class="btn-primary" id="challengeBtn">Verifikasi</button>
-      <button type="button" class="btn-secondary" id="skipChallengeBtn">🚨 Lupa? Pakai Recovery Key</button>
-      <div id="challengeError" class="error-msg" style="display:none"></div>
-    </form>
-  </div>
-
-  <!-- STEP 3: Seed Phrase -->
-  <div id="step3" style="display:none">
-    <div class="seed-info">
-      <h3>🔑 Seed Phrase</h3>
-      <p style="color:#888; font-size:0.9em;">Masukkan 12 kata seed phrase yang kamu hafal.</p>
     </div>
-    <form id="seedForm">
-      <div class="form-group">
-        <label for="seedPhrase">Seed Phrase (12 kata)</label>
-        <textarea id="seedPhrase" rows="4" placeholder="kopi meja kursi pintu jendela ..." style="resize:vertical;"></textarea>
-      </div>
-      <button type="submit" class="btn-primary" id="seedBtn">Login</button>
-      <button type="button" class="btn-secondary" id="recoveryBtn">🚨 Lupa seed? Login pakai Recovery Key</button>
-      <div id="seedError" class="error-msg" style="display:none"></div>
-    </form>
-  </div>
-
-  <!-- STEP 4: Recovery Key -->
-  <div id="step4" style="display:none">
-    <div class="recovery-info">
-      <h3>🔐 Recovery Key</h3>
-      <p style="color:#888; font-size:0.9em;">Masukkan recovery key dari flashdisk (TIDAK expired).</p>
-    </div>
-    <form id="recoveryForm">
-      <div class="form-group">
-        <label for="recoveryKey">Recovery Key</label>
-        <textarea id="recoveryKey" rows="3" placeholder="aB3$xY9!mQ2#nR7*pL5@kT8..." style="resize:vertical; font-family:monospace;"></textarea>
-      </div>
-      <button type="submit" class="btn-primary" id="recoveryBtn2">Login</button>
-      <button type="button" class="btn-secondary" id="backToSeedBtn">← Kembali ke Seed Phrase</button>
-      <div id="recoveryError" class="error-msg" style="display:none"></div>
-    </form>
-  </div>
+    <div id="loginError" class="error-msg" style="display:none"></div>
+    <button type="submit" class="btn-primary" id="loginBtn">Masuk</button>
+  </form>
 </div>
 
-<button class="theme-toggle" id="themeToggle" type="button" title="Ganti tema">☀️</button>
+<button class="theme-toggle" id="themeToggle" type="button" title="Ganti tema">&#127769;</button>
 
-<script src="static/js/login.js?v=18"></script>
+<script src="static/js/login.js?v=20"></script>
 </body>
 </html>

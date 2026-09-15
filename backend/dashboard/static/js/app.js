@@ -63,6 +63,9 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('addNilaiBtn').addEventListener('click', addNilai);
   document.getElementById('pfUploadBtn').addEventListener('click', pfUpload);
   document.getElementById('generateSeedBtn').addEventListener('click', handleGenerateSeed);
+  document.getElementById('seedNextBtn').addEventListener('click', handleSeedNext);
+  document.getElementById('seedVerifyBtn').addEventListener('click', handleSeedVerify);
+  document.getElementById('seedVerifyBackBtn').addEventListener('click', handleSeedVerifyBack);
   document.getElementById('copyRecoveryKeyBtn').addEventListener('click', copyRecoveryKey);
 
   loadAbsensi();
@@ -753,15 +756,23 @@ function formatTanggal(tgl) {
 }
 
 /* ── Keamanan: Generate Seed & Recovery Key ── */
+let _seedVerifySelection = [];
+
 async function handleGenerateSeed() {
   const btn = document.getElementById('generateSeedBtn');
   const errBox = document.getElementById('seedErrorBox');
   const resultBox = document.getElementById('seedResultBox');
-  
-  btn.textContent = 'Menggenerate...';
+  const verifyBox = document.getElementById('seedVerifyBox');
+  const successBox = document.getElementById('seedSuccessBox');
+
+  if (!confirm('Go? Seed lama akan DIHAPUS dan diganti dengan seed baru. Lanjutkan?')) return;
+
+  btn.textContent = 'Mengenerate...';
   btn.disabled = true;
   errBox.style.display = 'none';
   resultBox.style.display = 'none';
+  verifyBox.style.display = 'none';
+  successBox.style.display = 'none';
 
   try {
     const res = await apiFetch('/api/admin/setup-seed-and-key', {
@@ -793,6 +804,104 @@ async function handleGenerateSeed() {
     btn.textContent = '🎲 Generate Seed & Recovery Key';
     btn.disabled = false;
   }
+}
+
+async function handleSeedNext() {
+  const errBox = document.getElementById('seedErrorBox');
+  const resultBox = document.getElementById('seedResultBox');
+  const verifyBox = document.getElementById('seedVerifyBox');
+  errBox.style.display = 'none';
+
+  const res = await apiFetch('/api/admin/seed/quiz');
+  if (!res) return;
+  const data = await res.json();
+  if (!res.ok) {
+    errBox.textContent = data.detail || 'Gagal ambil soal verifikasi.';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  _seedVerifySelection = [];
+  const container = document.getElementById('seedVerifyOptions');
+  container.innerHTML = '';
+
+  data.words.forEach(word => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'btn-secondary';
+    chip.textContent = word;
+    chip.style.padding = '8px 10px';
+    chip.style.fontSize = '13px';
+    chip.addEventListener('click', () => {
+      const idx = _seedVerifySelection.indexOf(word);
+      if (idx >= 0) {
+        _seedVerifySelection.splice(idx, 1);
+        chip.classList.remove('btn-success');
+        chip.classList.add('btn-secondary');
+      } else if (_seedVerifySelection.length < data.total) {
+        _seedVerifySelection.push(word);
+        chip.classList.remove('btn-secondary');
+        chip.classList.add('btn-success');
+      }
+      updateSeedVerifyCount(data.total);
+    });
+    container.appendChild(chip);
+  });
+
+  updateSeedVerifyCount(data.total);
+  resultBox.style.display = 'none';
+  verifyBox.style.display = 'block';
+}
+
+function updateSeedVerifyCount(total) {
+  document.getElementById('seedVerifyCount').textContent = `Terpilih: ${_seedVerifySelection.length} / ${total}`;
+}
+
+async function handleSeedVerify() {
+  const errBox = document.getElementById('seedErrorBox');
+  const successBox = document.getElementById('seedSuccessBox');
+  const verifyBox = document.getElementById('seedVerifyBox');
+  errBox.style.display = 'none';
+
+  if (_seedVerifySelection.length === 0) {
+    errBox.textContent = 'Pilih dulu kata-kata seed-mu.';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('seedVerifyBtn');
+  btn.textContent = 'Memeriksa...';
+  btn.disabled = true;
+
+  try {
+    const res = await apiFetch('/api/admin/seed/verify-words', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ words: _seedVerifySelection })
+    });
+    if (!res) return;
+    const data = await res.json();
+    if (res.ok) {
+      verifyBox.style.display = 'none';
+      successBox.textContent = '✅ ' + (data.message || 'Verifikasi berhasil!');
+      successBox.style.display = 'block';
+      showToast('Verifikasi seed berhasil!');
+    } else {
+      errBox.textContent = data.detail || 'Jawaban belum tepat.';
+      errBox.style.display = 'block';
+    }
+  } catch (e) {
+    errBox.textContent = 'Gagal terhubung ke server.';
+    errBox.style.display = 'block';
+  } finally {
+    btn.textContent = '✅ Selesai Verifikasi';
+    btn.disabled = false;
+  }
+}
+
+function handleSeedVerifyBack() {
+  document.getElementById('seedVerifyBox').style.display = 'none';
+  document.getElementById('seedResultBox').style.display = 'block';
 }
 
 function copyRecoveryKey() {

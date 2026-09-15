@@ -19,6 +19,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Absensi Murid</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link rel="icon" type="image/png" href="static/img/logo.png">
 <link rel="stylesheet" href="static/css/style.css?v=17">
 </head>
@@ -331,10 +334,12 @@
         </ul>
       </div>
 
+      <!-- LANGKAH 1: Generate -->
       <div class="security-actions">
         <button class="btn-success" id="generateSeedBtn" type="button">
           🎲 Generate Seed &amp; Recovery Key
         </button>
+        <small style="display:block; margin-top:6px; color:#c00;">Generate baru akan MENGHAPUS seed lama dan menggantinya dengan yang baru.</small>
       </div>
 
       <div id="seedResultBox" style="display:none; margin-top:20px; padding:16px; border:1px solid #ddd; border-radius:8px;">
@@ -358,16 +363,29 @@
         </div>
 
         <div class="seed-warning">
-          <p style="color:#c00; font-weight:bold;">⚠️ JANGAN LUPA KERJAKAN:</p>
+          <p style="color:#c00; font-weight:bold;">⚠️ JANGAN LUPA KERJAKAN SEBELUM LANJUT:</p>
           <ul>
             <li>Hafal seed phrase di otak</li>
             <li>Hafal mapping (nomor 1 = rumah, dst.)</li>
             <li>Copy recovery key ke flashdisk</li>
           </ul>
         </div>
+
+        <button class="btn-primary" id="seedNextBtn" type="button" style="margin-top:14px;">Lanjut ke Verifikasi ➜</button>
+      </div>
+
+      <!-- LANGKAH 2: Verifikasi -->
+      <div id="seedVerifyBox" style="display:none; margin-top:20px; padding:16px; border:1px solid #ddd; border-radius:8px;">
+        <h4>🔍 Verifikasi Seed</h4>
+        <p style="font-size:13px;">Pilih <strong>12 kata</strong> yang termasuk seed-mu dari daftar berikut. Setelah dipilih, klik "Selesai Verifikasi".</p>
+        <div id="seedVerifyOptions" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; margin-top:12px;"></div>
+        <p id="seedVerifyCount" style="font-size:12px; margin-top:10px;">Terpilih: 0 / 12</p>
+        <button class="btn-primary" id="seedVerifyBtn" type="button" style="margin-top:10px;">✅ Selesai Verifikasi</button>
+        <button class="btn-secondary" id="seedVerifyBackBtn" type="button" style="margin-top:10px; margin-left:6px;">🔄 Lihat Seed Lagi</button>
       </div>
 
       <div id="seedErrorBox" style="display:none; margin-top:15px; padding:12px; background:#fee; border:1px solid #c00; border-radius:6px; color:#c00;"></div>
+      <div id="seedSuccessBox" style="display:none; margin-top:15px; padding:12px; background:#e8f7ee; border:1px solid #2a8; border-radius:6px; color:#175;">✅ Seed &amp; Recovery Key tersimpan aman dan terverifikasi!</div>
     </div>
   </section>
 
@@ -391,6 +409,6 @@
 <!-- TOAST -->
 <div class="toast" id="toast" aria-live="polite" role="status"></div>
 
-<script src="static/js/app.js?v=18"></script>
+<script src="static/js/app.js?v=21"></script>
 </body>
 </html>

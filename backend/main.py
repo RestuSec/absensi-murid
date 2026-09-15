@@ -24,10 +24,10 @@ from database import get_conn, init_db, seed_admin, new_token
 from auth_seed import (
     generate_seed_phrase, build_mapping, hash_seed, verify_seed,
     generate_recovery_key, hash_recovery_key, verify_recovery_key,
-    generate_challenge
+    generate_challenge, WORDLIST
 )
 from database import (
-    get_admin_seed_data, get_all_admin_seed_data, clear_admin_seed, setup_seed_and_key
+    get_admin_seed_data, get_all_admin_seed_data, clear_admin_seed, setup_seed_and_key, mark_seed_verified
 )
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -94,7 +94,7 @@ async def security_headers(request: Request, call_next):
     )
     response.headers["Permissions-Policy"] = (
         "camera=(), microphone=(), geolocation=(), "
-        "payment=(), usb=(), battery=(), "
+        "payment=(), usb=(), "
         "fullscreen=(self), interest-cohort=()"
     )
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
@@ -877,6 +877,96 @@ def setup_seed_and_key_endpoint(payload: dict = Depends(verify_token)):
         "recovery_key": recovery_key,
         "warning": "⚠️ SIMPAN RECOVERY KEY DI FLASHDISK! Key ini TIDAK akan expired."
     }
+
+@app.get("/api/admin/seed/quiz")
+def seed_quiz(payload: dict = Depends(verify_token)):
+    """Ambil 12 kata seed admin + 10 kata pengganggu, diacak. Untuk verifikasi mana
+    yang termasuk 12 kata miliknya."""
+    admin_data = get_admin_seed_data(payload["sub"])
+    if not admin_data or not admin_data["mapping"]:
+        raise HTTPException(400, "Belum ada seed. Generate dulu.")
+    seed_words = [m[1] for m in admin_data["mapping"]]
+    decoys = [w for w in WORDLIST if w not in seed_words]
+    import random as _random
+    _random.shuffle(decoys)
+    candidates = seed_words + decoys[:10]
+    _random.shuffle(candidates)
+    return {"words": candidates, "total": len(seed_words)}
+
+@app.post("/api/admin/seed/verify-words")
+def seed_verify_words(data: dict, payload: dict = Depends(verify_token)):
+    """Cek jawaban verifikasi: kata yang dipilih harus cocok persis (multiset) dengan
+    kata-kata seed admin (mendukung kata duplikat). Sekali kata salah => ditolak."""
+    from collections import Counter
+    admin_data = get_admin_seed_data(payload["sub"])
+    if not admin_data or not admin_data["mapping"]:
+        raise HTTPException(400, "Belum ada seed. Generate dulu.")
+    seed_words = Counter(m[1].lower() for m in admin_data["mapping"])
+    picked = Counter(str(w).strip().lower() for w in data.get("words", []))
+    if picked != seed_words:
+        # jangan bocorkan jumlah yang salah, cukup tolak
+        raise HTTPException(400, "Jawaban belum tepat, coba lagi.")
+    return {"ok": True, "message": "Verifikasi berhasil! Seed tersimpan aman."}
+
+@app.get("/api/admin/seed/status")
+def seed_status(payload: dict = Depends(verify_token)):
+    """Status seed admin: sudah ada belum / sudah diverifikasi belum."""
+    admin_data = get_admin_seed_data(payload["sub"])
+    if not admin_data:
+        raise HTTPException(400, "Data admin tidak ditemukan.")
+    return {
+        "has_seed": bool(admin_data["seed_hash"] and admin_data["mapping"]),
+        "seed_verified": bool(admin_data["seed_verified"]),
+    }
+
+@app.post("/api/admin/seed/challenge3")
+def seed_challenge3(payload: dict = Depends(verify_token)):
+    """Quiz 3 kata ala wallet kripto (BIP-39): ambil 3 posisi acak dari seed,
+    masing-masing dibawa daftar kata campur (benar + pengecoh)."""
+    import random as _random
+    import uuid
+    admin_data = get_admin_seed_data(payload["sub"])
+    if not admin_data or not admin_data["mapping"]:
+        raise HTTPException(400, "Belum ada seed. Generate dulu.")
+    seed_words = [m[1] for m in admin_data["mapping"]]
+    positions = _random.sample(range(12), 3)
+    questions = []
+    for pos in positions:
+        correct = seed_words[pos]
+        decoys = _random.sample([w for w in WORDLIST if w != correct], 5)
+        options = [correct] + decoys
+        _random.shuffle(options)
+        questions.append({"position": pos + 1, "options": options})
+    challenge_id = str(uuid.uuid4())[:16]
+    _temp_sessions[challenge_id] = {
+        "username": payload["sub"],
+        "answers": {pos + 1: seed_words[pos] for pos in positions},
+        "attempts": 0,
+    }
+    return {"challenge_id": challenge_id, "questions": questions}
+
+@app.post("/api/admin/seed/verify3")
+def seed_verify3(data: dict, payload: dict = Depends(verify_token)):
+    """Cek jawaban quiz 3 kata. Cukup 3 jawaban benar → seed resmi terverifikasi."""
+    import time
+    challenge_id = data.get("challenge_id", "")
+    answers = data.get("answers") or {}
+    session = _temp_sessions.get(challenge_id)
+    if not session:
+        raise HTTPException(400, "Challenge kadaluarsa. Coba lagi.")
+    if session["username"] != payload["sub"]:
+        raise HTTPException(401, "Challenge milik user lain.")
+    if session["attempts"] >= 3:
+        del _temp_sessions[challenge_id]
+        raise HTTPException(429, "Terlalu banyak salah.")
+    correct = all(str(answers.get(str(k), "")).strip().lower() == str(v).lower()
+                 for k, v in session["answers"].items())
+    if not correct:
+        session["attempts"] += 1
+        raise HTTPException(401, "Jawaban belum tepat.")
+    del _temp_sessions[challenge_id]
+    mark_seed_verified(payload["sub"])
+    return {"ok": True, "message": "Verifikasi berhasil! Seed terverifikasi resmi."}
 
 @app.post("/api/login/challenge")
 def login_challenge(form: OAuth2PasswordRequestForm = Depends()):

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verifikasi Seed &mdash; RestuSec</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="static/img/logo.png">
+<link rel="stylesheet" href="static/css/style.css?v=17">
+<style>
+  .verify-card { max-width: 720px; }
+  .info-panel { background: rgba(13,110,253,.08); border:1px solid rgba(13,110,253,.3); border-radius:8px; padding:12px 14px; margin:14px 0; font-size:13px; line-height:1.5; }
+  .seed-box { background: var(--bg, #fff); border:1px solid var(--border, #ddd); border-radius:8px; padding:14px; margin:12px 0; }
+  .seed-box .lbl { font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:var(--muted, #666); }
+  .seed-phrase { font-size:1.15em; font-weight:700; letter-spacing:.5px; margin:8px 0 4px; font-family:monospace; }
+  .mapping-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:6px; margin-top:8px; font-size:13px; }
+  .mapping-grid div { padding:6px 8px; border-radius:6px; background:var(--surface, rgba(0,0,0,.04)); }
+  .warning-box { border:1px dashed #c00; color:#c00; border-radius:8px; padding:12px 14px; margin:12px 0; font-size:13px; }
+  .q-block { margin:14px 0; padding:12px; border:1px solid var(--border,#ddd); border-radius:8px; }
+  .q-block h4 { margin:0 0 10px; font-size:15px; }
+  .opt-row { display:flex; flex-wrap:wrap; gap:8px; }
+  .opt-row button { min-width:110px; }
+  .verify-result { display:none; margin-top:14px; padding:12px; border-radius:8px; font-size:14px; }
+  .ok { display:block; background:var(--success-bg,#e8f7ee); color:var(--success,#18794e); border:1px solid var(--success,#18794e); }
+  .err { display:block; background:var(--error-bg,#fee); color:#c00; border:1px solid #c00; }
+  .step-note { font-size:12px; color:var(--muted,#888); margin-top:10px; }
+</style>
+</head>
+<body class="login-page">
+
+<div class="login-card verify-card">
+  <div class="login-logo">
+    <h1 style="margin-top:0;">&#128272; Verifikasi Seed</h1>
+    <p>Langkah keamanan sebelum masuk dashboard</p>
+  </div>
+
+  <div id="errTop" style="display:none" class="error-msg"></div>
+  <div id="loadingMsg" style="text-align:center; padding:20px 0;">Memuat data keamanan&hellip;</div>
+
+  <!-- Langkah 1: LIHAT SEED + KEY -->
+  <div id="step1" style="display:none;">
+    <div class="info-panel">
+      <strong>&#128274; Cara kerjanya (standar BIP-39):</strong> Kata-kata ini dibangkitkan dari angka acak kuat
+      (2&#178;&#185; = &plusmn;340 desiliun kemungkinan). Kata ke-12 adalah <em>checksum</em> agar 11 kata sebelumnya
+      terbukti benar &amp; berurutan. Seed tidak pernah disimpan di server &mdash; hanya hash-nya. Siapa pun di luar
+      kamu tidak bisa melihatnya lagi.
+    </div>
+
+    <div class="seed-box" id="seedDisplay">
+      <div class="lbl">Seed Phrase &mdash; 12 kata (hafalkan!)</div>
+      <div class="seed-phrase" id="seedPhraseOut">&hellip;</div>
+      <div class="lbl" style="margin-top:12px;">Mapping (nomor &#8594; barang)</div>
+      <div class="mapping-grid" id="mappingOut"></div>
+      <div class="lbl" style="margin-top:12px;">Recovery Key &mdash; salin ke flashdisk!</div>
+      <input type="text" id="recoveryOut" readonly style="width:100%; padding:8px; font-family:monospace; font-size:.85em; margin-top:6px; color:#c00;">
+      <button class="btn-secondary" id="copyKeyBtn" type="button" style="margin-top:8px;">&#128203; Copy ke Clipboard</button>
+    </div>
+
+    <div class="warning-box">
+      &#9888;&#65039; <strong>JANGAN LEWATKAN:</strong> Hafalkan 12 kata di otakmu + salin Recovery Key ke flashdisk
+      <strong>sekarang</strong>. Key ini <em>tidak</em> pernah muncul lagi dan tidak akan expired.
+    </div>
+    <button class="btn-primary" id="nextBtn" type="button" style="width:100%;">Saya Sudah Hafal &amp; Tersimpan &#10145;</button>
+  </div>
+
+  <!-- Langkah 2: VERIFIKASI 3 KATA -->
+  <div id="step2" style="display:none;">
+    <p>Verifikasi bukti kamu benar-benar menghafal seed. Pilih <strong>3 kata</strong> yang benar di posisinya:</p>
+    <div id="questions"></div>
+    <div id="verifyResult" class="verify-result"></div>
+    <button class="btn-primary" id="verifyBtn" type="button" style="width:100%;">&#9989; Selesai Verifikasi</button>
+    <button class="btn-secondary" id="regenerateBtn" type="button" style="width:100%; margin-top:8px;">&#128260; Saya Lupa Seed/Key &mdash; Ganti yang Baru</button>
+    <div class="step-note">Lupa 12 kata atau key? Klik "Ganti yang Baru" &mdash; seed lama dihapus, seed + key baru muncul untuk dihafal lagi.</div>
+  </div>
+</div>
+
+<button class="theme-toggle" id="themeToggle" type="button" title="Ganti tema">&#127769;</button>
+
+<script src="static/js/verify.js?v=1"></script>
+</body>
+</html>

@@ -136,9 +136,15 @@ def init_db():
             seed_hash TEXT,
             mapping TEXT,
             recovery_key_hash TEXT,
+            seed_verified INTEGER DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now', 'localtime'))
         )
     """)
+    for col, decl in (("seed_hash","TEXT"),("mapping","TEXT"),("recovery_key_hash","TEXT"),("seed_verified","INTEGER")):
+        cols = [r[1] for r in cur.execute("PRAGMA table_info(admin)").fetchall()]
+        if col not in cols:
+            cur.execute(f"ALTER TABLE admin ADD COLUMN {col} {decl}")
+            print(f"[DB] Kolom admin.{col} ditambahkan.")
 
     # Tabel materi (diisi guru)
     cur.execute("""
@@ -211,10 +217,16 @@ if __name__ == "__main__":
     seed_admin()
 
 # ── Seed & Recovery Key Functions ────────────────────────────────────────────
+def mark_seed_verified(username: str):
+    conn = get_conn()
+    conn.execute("UPDATE admin SET seed_verified = 1 WHERE username = ?", (username,))
+    conn.commit()
+    conn.close()
+
 def setup_seed_and_key(username: str, seed: List[str], recovery_key: str, mapping: List):
     """
     Simpan seed phrase, mapping, dan recovery key ke database.
-    Dipanggil sekali saat setup.
+    Reset seed_verified ke 0 (perlu verifikasi ulang).
     """
     from auth_seed import hash_seed as _hash_seed, hash_recovery_key as _hash_recovery_key
     seed_hash = _hash_seed(seed)
@@ -225,7 +237,7 @@ def setup_seed_and_key(username: str, seed: List[str], recovery_key: str, mappin
     cur = conn.cursor()
     cur.execute("""
         UPDATE admin 
-        SET seed_hash = ?, mapping = ?, recovery_key_hash = ?
+        SET seed_hash = ?, mapping = ?, recovery_key_hash = ?, seed_verified = 0
         WHERE username = ?
     """, (seed_hash, mapping_json, recovery_hash, username))
     conn.commit()
@@ -237,7 +249,7 @@ def get_admin_seed_data(username: str) -> dict:
     conn = get_conn()
     cur = conn.cursor()
     cur.execute("""
-        SELECT username, seed_hash, mapping, recovery_key_hash, unit 
+        SELECT username, seed_hash, mapping, recovery_key_hash, unit, seed_verified
         FROM admin WHERE username = ?
     """, (username,))
     row = cur.fetchone()
@@ -249,7 +261,8 @@ def get_admin_seed_data(username: str) -> dict:
             "seed_hash": row["seed_hash"],
             "mapping": _json.loads(row["mapping"]) if row["mapping"] else None,
             "recovery_key_hash": row["recovery_key_hash"],
-            "unit": row["unit"]
+            "unit": row["unit"],
+            "seed_verified": bool(row["seed_verified"])
         }
     return None
 

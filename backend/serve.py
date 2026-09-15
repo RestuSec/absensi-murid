@@ -10,6 +10,15 @@ from main import app
 
 DASHBOARD_DIR = os.path.join(os.path.dirname(__file__), "dashboard")
 
+# HTML tidak boleh di-cache: kalau cache, update dashboard/generate tidak terlihat
+# setelah login ulang.
+@app.middleware("http")
+async def no_cache_html(request, call_next):
+    response = await call_next(request)
+    if response.headers.get("content-type", "").startswith("text/html"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
 # Serve static assets
 app.mount(
     "/static",
@@ -31,6 +40,15 @@ def serve_portofolio():
 @app.get("/index", include_in_schema=False)
 def serve_dashboard():
     return FileResponse(os.path.join(DASHBOARD_DIR, "index.html"))
+
+@app.get("/verify", include_in_schema=False)
+def serve_verify():
+    return FileResponse(os.path.join(DASHBOARD_DIR, "verify.html"))
+
+# Strix domain verification
+@app.get("/.well-known/strix-verify.txt", include_in_schema=False)
+def serve_strix_verify():
+    return FileResponse(os.path.join(DASHBOARD_DIR, ".well-known", "strix-verify.txt"), media_type="text/plain")
 
 # Fallback: file HTML apapun di folder dashboard
 @app.get("/absen", include_in_schema=False)
