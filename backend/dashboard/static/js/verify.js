@@ -100,6 +100,14 @@
     showStep(1);
   }
 
+  function showExisting(data) {
+    document.getElementById('seedPhraseOut').textContent = data.seed_phrase;
+    document.getElementById('mappingOut').innerHTML =
+      data.mapping.map(m => '<div><strong>' + m[0] + '</strong> &rarr; ' + esc(m[2]) + ' <small>(' + esc(m[1]) + ')</small></div>').join('');
+    document.getElementById('recoveryOut').value = '(sudah disimpan saat generate)';
+    showStep(1);
+  }
+
   document.getElementById('copyKeyBtn').addEventListener('click', () => {
     const v = document.getElementById('recoveryOut').value;
     if (!v) return;
@@ -196,6 +204,9 @@
         showStep(0);
       } else if (data.seed_verified) {
         loadQuiz();
+      } else if (data.has_seed) {
+        // Seed sudah ada → TAMPILKAN yang tersimpan, jangan generate baru.
+        showExisting(data);
       } else {
         generateAndShow();
       }

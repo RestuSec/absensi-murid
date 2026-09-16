@@ -966,10 +966,18 @@ def seed_status(payload: dict = Depends(verify_token)):
     admin_data = get_admin_seed_data(payload["sub"])
     if not admin_data:
         raise HTTPException(400, "Data admin tidak ditemukan.")
+    has_seed = bool(admin_data["seed_hash"] and admin_data["mapping"])
+    seed_phrase = None
+    mapping = None
+    if has_seed:
+        seed_phrase = " ".join(m[1] for m in admin_data["mapping"])
+        mapping = [list(m) for m in admin_data["mapping"]]
     return {
-        "has_seed": bool(admin_data["seed_hash"] and admin_data["mapping"]),
+        "has_seed": has_seed,
         "seed_verified": bool(admin_data["seed_verified"]),
         "must_change_password": bool(row["must_change_password"]) if row else False,
+        "seed_phrase": seed_phrase,
+        "mapping": mapping,
     }
 
 @app.post("/api/admin/seed/challenge3")
