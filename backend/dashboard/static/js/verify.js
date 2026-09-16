@@ -12,6 +12,7 @@
 
   const errTop = document.getElementById('errTop');
   const loading = document.getElementById('loadingMsg');
+  const step0 = document.getElementById('step0');
   const step1 = document.getElementById('step1');
   const step2 = document.getElementById('step2');
   const token = sessionStorage.getItem('token');
@@ -35,6 +36,7 @@
 
   function showStep(n) {
     loading.style.display = 'none';
+    step0.style.display = n === 0 ? 'block' : 'none';
     step1.style.display = n === 1 ? 'block' : 'none';
     step2.style.display = n === 2 ? 'block' : 'none';
   }
@@ -157,13 +159,42 @@
     }
   });
 
+  document.getElementById('pwBtn').addEventListener('click', async () => {
+    const res = document.getElementById('pwResult');
+    res.classList.remove('ok', 'err');
+    res.style.display = 'none';
+    const old = document.getElementById('oldPw').value;
+    const n1 = document.getElementById('newPw').value;
+    const n2 = document.getElementById('newPw2').value;
+    if (!old || !n1 || !n2) { res.classList.add('err'); res.textContent = 'Isi semua kolom password.'; res.style.display = 'block'; return; }
+    try {
+      const btn = document.getElementById('pwBtn');
+      btn.disabled = true; btn.textContent = 'Menyimpan…';
+      const r = await api('/api/admin/change-password', { method: 'POST', body: JSON.stringify({ old_password: old, new_password: n1, new_password2: n2 }) });
+      const d = await r.json();
+      if (r.ok) {
+        res.classList.add('ok'); res.textContent = '✅ Password diganti. Lanjut verifikasi seed...'; res.style.display = 'block';
+        generateAndShow();
+      } else {
+        res.classList.add('err'); res.textContent = d.detail || 'Gagal ganti password.'; res.style.display = 'block';
+      }
+    } catch (e) {
+      res.classList.add('err'); res.textContent = 'Gagal terhubung ke server.'; res.style.display = 'block';
+    } finally {
+      const btn = document.getElementById('pwBtn');
+      btn.disabled = false; btn.textContent = 'Ganti Password & Lanjut';
+    }
+  });
+
   // Isi halaman: cek status seed
   (async () => {
     try {
       const res = await api('/api/admin/seed/status');
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Gagal cek status.');
-      if (data.seed_verified) {
+      if (data.must_change_password) {
+        showStep(0);
+      } else if (data.seed_verified) {
         loadQuiz();
       } else {
         generateAndShow();

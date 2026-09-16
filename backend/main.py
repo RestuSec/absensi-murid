@@ -30,13 +30,17 @@ from database import (
     get_admin_seed_data, get_all_admin_seed_data, clear_admin_seed, setup_seed_and_key, mark_seed_verified
 )
 
-# ── Config ──────────────────────────────────────────────────────────────────
+# â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 SECRET_KEY = os.getenv("SECRET_KEY", "")
 ALGORITHM  = "HS256"
 TOKEN_EXP_HOURS = 8
 
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY belum di-set di .env")
+
+_INSECURE_KEYS = {"secret", "changeme", "your_secret_here", "password", "abc123", "", "none"}
+if SECRET_KEY.strip().lower() in _INSECURE_KEYS:
+    raise RuntimeError("SECRET_KEY di .env terlalu lemah! Ganti dengan string acak panjang (>=32 karakter)")
 
 VALID_UNITS = ("MI", "MTs", "RA", "ALL")
 VALID_STATUS = ("Hadir", "Izin", "Sakit")
@@ -45,7 +49,7 @@ LOGIN_MAX_ATTEMPTS = 5
 LOGIN_MAX_ATTEMPTS_IP = 10
 LOGIN_WINDOW_SEC = 60
 
-# ── Excel formula injection guard ────────────────────────────────────────────
+# â”€â”€ Excel formula injection guard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 _FORMULA_PREFIX = ("=", "+", "-", "@", "\t", "\r")
 
 def excel_safe(value):
@@ -53,7 +57,7 @@ def excel_safe(value):
         return "'" + value
     return value
 
-# ── App ──────────────────────────────────────────────────────────────────────
+# â”€â”€ App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app = FastAPI(title="Absensi Murid API", docs_url=None, redoc_url=None, openapi_url=None)
 
 CORS_ORIGINS = os.getenv(
@@ -103,7 +107,7 @@ async def security_headers(request: Request, call_next):
     response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
     return response
 
-# ── JWT Helpers ──────────────────────────────────────────────────────────────
+# â”€â”€ JWT Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
 def create_token(data: dict) -> str:
@@ -140,6 +144,13 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> dict:
     payload["unit"] = db_unit
     return payload
 
+def require_verified(payload: dict = Depends(verify_token)) -> dict:
+    """Akses data dashboard wajib melewati verifikasi seed terlebih dahulu."""
+    from database import is_seed_verified
+    if not is_seed_verified(payload["sub"]):
+        raise HTTPException(status_code=403, detail="Seed belum diverifikasi. Verifikasi dulu di /verify")
+    return payload
+
 _login_attempts = defaultdict(list)
 _login_ip_attempts = defaultdict(list)
 
@@ -164,7 +175,7 @@ def check_login_attempts(request: Request, username: str):
 
     return ip, key
 
-# ── Rate limit absen QR (per token + IP) ──────────────────────────────────────
+# â”€â”€ Rate limit absen QR (per token + IP) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 ABSEB_MAX_PER_MIN = 5
 _absen_attempts = defaultdict(list)
 
@@ -181,13 +192,13 @@ def check_absen_rate_limit(request: Request, token: str):
         for k in [k for k, v in _absen_attempts.items() if not v or v[-1] < cutoff]:
             del _absen_attempts[k]
 
-# ── Startup ──────────────────────────────────────────────────────────────────
+# â”€â”€ Startup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @app.on_event("startup")
 def startup():
     init_db()
     seed_admin()
 
-# ── Auth ─────────────────────────────────────────────────────────────────────
+# â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @app.post("/api/login")
 def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
     ip, key = check_login_attempts(request, form.username)
@@ -198,7 +209,7 @@ def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
     admin = cur.fetchone()
     conn.close()
 
-    # ponytail: dummy hash biar waktu verifikasi seragam — user yang tidak ada
+    # ponytail: dummy hash biar waktu verifikasi seragam â€” user yang tidak ada
     # tetap jalan bcrypt sehingga attacker tidak bisa bedakan via timing.
     DUMMY = "$2b$12$vt5g/54OZcsrT9MsRc4W2u88bwcOYvHv6FNb1Rx/f88r9Z5zzPDAW"
     pwhash = admin["password_hash"] if admin else DUMMY
@@ -215,13 +226,46 @@ def login(request: Request, form: OAuth2PasswordRequestForm = Depends()):
         "token_type": "bearer",
         "unit": admin["unit"],
         "username": admin["username"],
+        "must_change_password": bool(admin["must_change_password"]),
     }
+
+@app.post("/api/admin/change-password")
+def change_password(data: dict, payload: dict = Depends(verify_token)):
+    """Ganti password sendiri. Wajib saat must_change_password = 1."""
+    old_pw  = data.get("old_password", "")
+    new_pw1 = data.get("new_password", "")
+    new_pw2 = data.get("new_password2", "")
+    if len(new_pw1) < 8:
+        raise HTTPException(400, "Password baru minimal 8 karakter.")
+    if new_pw1 != new_pw2:
+        raise HTTPException(400, "Konfirmasi password tidak sama.")
+    weak = {"admin", "password", "123456", "changeme", "12345", "qwerty", "password123", "admin123"}
+    if new_pw1.strip().lower() in weak:
+        raise HTTPException(400, "Password baru terlalu lemah.")
+    if new_pw1 == old_pw:
+        raise HTTPException(400, "Password baru harus berbeda dari yang lama.")
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT password_hash FROM admin WHERE username = ?", (payload["sub"],))
+    row = cur.fetchone()
+    if not row or not bcrypt.verify(old_pw, row["password_hash"]):
+        conn.close()
+        raise HTTPException(401, "Password lama salah.")
+    new_hash = bcrypt.hash(new_pw1)
+    cur.execute(
+        "UPDATE admin SET password_hash = ?, must_change_password = 0 WHERE username = ?",
+        (new_hash, payload["sub"]),
+    )
+    conn.commit()
+    conn.close()
+    return {"success": True}
 
 @app.get("/api/me")
 def me(payload: dict = Depends(verify_token)):
     return {"username": payload["sub"], "unit": payload["unit"]}
 
-# ── Admin: kelola murid + QR ────────────────────────────────────────────────
+# â”€â”€ Admin: kelola murid + QR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class MuridIn(BaseModel):
     nama: str
     kelas: str
@@ -229,7 +273,7 @@ class MuridIn(BaseModel):
     urutan: int = 0
 
 @app.get("/api/murid")
-def list_murid(payload: dict = Depends(verify_token)):
+def list_murid(payload: dict = Depends(require_verified)):
     conn = get_conn()
     cur  = conn.cursor()
     if payload["unit"] == "ALL":
@@ -242,7 +286,7 @@ def list_murid(payload: dict = Depends(verify_token)):
     return rows
 
 @app.post("/api/murid")
-def create_murid(data: MuridIn, payload: dict = Depends(verify_token)):
+def create_murid(data: MuridIn, payload: dict = Depends(require_verified)):
     data.unit = payload["unit"] if payload["unit"] != "ALL" else data.unit
     if data.unit not in VALID_UNITS or data.unit == "ALL":
         raise HTTPException(status_code=400, detail="Unit tidak valid")
@@ -261,7 +305,7 @@ def create_murid(data: MuridIn, payload: dict = Depends(verify_token)):
     return {"ok": True, "id": mid, "token": None}
 
 @app.delete("/api/murid/{murid_id}")
-def delete_murid(murid_id: int, payload: dict = Depends(verify_token)):
+def delete_murid(murid_id: int, payload: dict = Depends(require_verified)):
     conn = get_conn()
     cur  = conn.cursor()
     cur.execute(
@@ -276,7 +320,7 @@ def delete_murid(murid_id: int, payload: dict = Depends(verify_token)):
     return {"ok": True, "deleted": deleted}
 
 @app.post("/api/murid/{murid_id}/reset-token")
-def reset_murid_token(murid_id: int, payload: dict = Depends(verify_token)):
+def reset_murid_token(murid_id: int, payload: dict = Depends(require_verified)):
     conn = get_conn()
     cur  = conn.cursor()
     cur.execute(
@@ -291,7 +335,7 @@ def reset_murid_token(murid_id: int, payload: dict = Depends(verify_token)):
     return {"ok": True}
 
 @app.get("/api/murid/{murid_id}/qr")
-def murid_qr(murid_id: int, payload: dict = Depends(verify_token)):
+def murid_qr(murid_id: int, payload: dict = Depends(require_verified)):
     import qrcode
     from qrcode.constants import ERROR_CORRECT_H
     from PIL import Image
@@ -329,7 +373,7 @@ def murid_qr(murid_id: int, payload: dict = Depends(verify_token)):
     buf.seek(0)
     return StreamingResponse(buf, media_type="image/png")
 
-# ── Halaman absen publik: lookup token → identitas murid ───────────────────
+# â”€â”€ Halaman absen publik: lookup token â†’ identitas murid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @app.get("/api/absen/info/{token}")
 def absen_info(token: str):
     conn = get_conn()
@@ -341,7 +385,7 @@ def absen_info(token: str):
         raise HTTPException(status_code=404, detail="QR tidak valid")
     return dict(row)
 
-# ── Absen QR (web form) ─────────────────────────────────────────────────────
+# â”€â”€ Absen QR (web form) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @app.post("/api/absen-web")
 async def absen_web(
     request: Request,
@@ -353,7 +397,7 @@ async def absen_web(
     # ponytail: QR per-murid = token statis tanpa waktu kedaluwarsa.
     # Ditutup: rate-limit per token+IP, dan maksimal 1 absen/hari per murid
     # (index unik idx_absen_1perday). Fotonya QR masih bisa di-titipin sampai
-    # habis kuota harian — upgrade nyata: token sekali pakai / berjangka.
+    # habis kuota harian â€” upgrade nyata: token sekali pakai / berjangka.
     if status not in VALID_STATUS:
         raise HTTPException(status_code=400, detail="Status absensi tidak valid")
 
@@ -396,11 +440,11 @@ async def absen_web(
         "tanggal": tanggal,
     }
 
-# ── Dashboard - Baca Absensi ─────────────────────────────────────────────────
+# â”€â”€ Dashboard - Baca Absensi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @app.get("/api/absensi")
 def list_absensi(
     tanggal: Optional[str] = None,
-    payload: dict = Depends(verify_token)
+    payload: dict = Depends(require_verified)
 ):
     unit = payload["unit"]
     if unit not in VALID_UNITS:
@@ -424,12 +468,12 @@ def list_absensi(
     conn.close()
     return rows
 
-# ── Dashboard - Hapus Absensi ─────────────────────────────────────────────────
+# â”€â”€ Dashboard - Hapus Absensi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class DeleteIds(BaseModel):
     ids: list[int]
 
 @app.delete("/api/absensi")
-def delete_absensi(data: DeleteIds, payload: dict = Depends(verify_token)):
+def delete_absensi(data: DeleteIds, payload: dict = Depends(require_verified)):
     if not data.ids:
         raise HTTPException(status_code=400, detail="Tidak ada ID yang dikirim")
 
@@ -446,11 +490,11 @@ def delete_absensi(data: DeleteIds, payload: dict = Depends(verify_token)):
     conn.close()
     return {"ok": True, "deleted": deleted}
 
-# ── Export Excel ──────────────────────────────────────────────────────────────
+# â”€â”€ Export Excel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @app.get("/api/absensi/export")
 def export_excel(
     tanggal: Optional[str] = None,
-    payload: dict = Depends(verify_token)
+    payload: dict = Depends(require_verified)
 ):
     unit = payload["unit"]
     if unit not in VALID_UNITS:
@@ -549,9 +593,9 @@ def export_excel(
         headers={"Content-Disposition": f'attachment; filename="{fname}"'}
     )
 
-# ── Stats ─────────────────────────────────────────────────────────────────────
+# â”€â”€ Stats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @app.get("/api/stats")
-def stats(tanggal: Optional[str] = None, payload: dict = Depends(verify_token)):
+def stats(tanggal: Optional[str] = None, payload: dict = Depends(require_verified)):
     unit = payload["unit"]
     if unit not in VALID_UNITS:
         raise HTTPException(status_code=403, detail="Unit tidak valid")
@@ -580,12 +624,12 @@ def stats(tanggal: Optional[str] = None, payload: dict = Depends(verify_token)):
     conn.close()
     return row
 
-# ── Rekap per Murid ──────────────────────────────────────────────────────────
+# â”€â”€ Rekap per Murid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @app.get("/api/rekap")
 def rekap(
     start: Optional[str] = None,
     end: Optional[str] = None,
-    payload: dict = Depends(verify_token),
+    payload: dict = Depends(require_verified),
 ):
     unit = payload["unit"]
     if unit not in VALID_UNITS:
@@ -624,7 +668,7 @@ def rekap(
 def export_rekap_excel(
     start: Optional[str] = None,
     end: Optional[str] = None,
-    payload: dict = Depends(verify_token),
+    payload: dict = Depends(require_verified),
 ):
     unit = payload["unit"]
     if unit not in VALID_UNITS:
@@ -720,13 +764,13 @@ def export_rekap_excel(
         headers={"Content-Disposition": f'attachment; filename="{fname}"'}
     )
 
-# ── Guru: materi ────────────────────────────────────────────────────────────
+# â”€â”€ Guru: materi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class MateriIn(BaseModel):
     judul: str
     isi: str
 
 @app.get("/api/materi")
-def list_materi(payload: dict = Depends(verify_token)):
+def list_materi(payload: dict = Depends(require_verified)):
     conn = get_conn()
     cur  = conn.cursor()
     cur.execute("SELECT id, judul, isi, tanggal, created_by, created_at FROM materi ORDER BY tanggal DESC, id DESC")
@@ -735,7 +779,7 @@ def list_materi(payload: dict = Depends(verify_token)):
     return rows
 
 @app.post("/api/materi")
-def create_materi(data: MateriIn, payload: dict = Depends(verify_token)):
+def create_materi(data: MateriIn, payload: dict = Depends(require_verified)):
     if not data.judul.strip() or not data.isi.strip():
         raise HTTPException(status_code=400, detail="Judul & isi materi wajib diisi")
     conn = get_conn()
@@ -749,7 +793,7 @@ def create_materi(data: MateriIn, payload: dict = Depends(verify_token)):
     return {"ok": True, "id": mid}
 
 @app.delete("/api/materi/{materi_id}")
-def delete_materi(materi_id: int, payload: dict = Depends(verify_token)):
+def delete_materi(materi_id: int, payload: dict = Depends(require_verified)):
     conn = get_conn()
     cur  = conn.cursor()
     cur.execute(
@@ -762,7 +806,7 @@ def delete_materi(materi_id: int, payload: dict = Depends(verify_token)):
         raise HTTPException(status_code=404, detail="Materi tidak ditemukan")
     return {"ok": True}
 
-# ── Guru: nilai ─────────────────────────────────────────────────────────────
+# â”€â”€ Guru: nilai â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class NilaiIn(BaseModel):
     murid_id: int
     mapel: str
@@ -770,7 +814,7 @@ class NilaiIn(BaseModel):
     tanggal: str = ""
 
 @app.get("/api/nilai")
-def list_nilai(murid_id: int = None, payload: dict = Depends(verify_token)):
+def list_nilai(murid_id: int = None, payload: dict = Depends(require_verified)):
     unit = payload["unit"]
     conn = get_conn()
     cur  = conn.cursor()
@@ -793,7 +837,7 @@ def list_nilai(murid_id: int = None, payload: dict = Depends(verify_token)):
     return rows
 
 @app.post("/api/nilai")
-def create_nilai(data: NilaiIn, payload: dict = Depends(verify_token)):
+def create_nilai(data: NilaiIn, payload: dict = Depends(require_verified)):
     if not data.mapel.strip():
         raise HTTPException(status_code=400, detail="Mata pelajaran wajib diisi")
     if not (0 <= data.nilai <= 100):
@@ -815,7 +859,7 @@ def create_nilai(data: NilaiIn, payload: dict = Depends(verify_token)):
     return {"ok": True, "id": nid}
 
 @app.get("/api/nilai/rata2")
-def rata2_nilai(payload: dict = Depends(verify_token)):
+def rata2_nilai(payload: dict = Depends(require_verified)):
     unit = payload["unit"]
     conn = get_conn()
     cur  = conn.cursor()
@@ -831,7 +875,7 @@ def rata2_nilai(payload: dict = Depends(verify_token)):
     return rows
 
 @app.delete("/api/nilai/{nilai_id}")
-def delete_nilai(nilai_id: int, payload: dict = Depends(verify_token)):
+def delete_nilai(nilai_id: int, payload: dict = Depends(require_verified)):
     unit = payload["unit"]
     conn = get_conn()
     cur  = conn.cursor()
@@ -847,12 +891,12 @@ def delete_nilai(nilai_id: int, payload: dict = Depends(verify_token)):
         raise HTTPException(status_code=404, detail="Nilai tidak ditemukan")
     return {"ok": True}
 
-# ── Session store untuk challenge login ──────────────────────────────────────
+# â”€â”€ Session store untuk challenge login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 _temp_sessions = {}
 _temp_session_max = 100
 _temp_session_ttl = 300  # 5 menit
 
-# ── Auth Seed & Recovery Endpoints ───────────────────────────────────────────
+# â”€â”€ Auth Seed & Recovery Endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @app.post("/api/admin/setup-seed-and-key")
 def setup_seed_and_key_endpoint(payload: dict = Depends(verify_token)):
@@ -877,7 +921,7 @@ def setup_seed_and_key_endpoint(payload: dict = Depends(verify_token)):
         "seed_phrase": seed_str,
         "mapping": [[m[0], m[1], m[2]] for m in mapping],
         "recovery_key": recovery_key,
-        "warning": "⚠️ SIMPAN RECOVERY KEY DI FLASHDISK! Key ini TIDAK akan expired."
+        "warning": "âš ï¸ SIMPAN RECOVERY KEY DI FLASHDISK! Key ini TIDAK akan expired."
     }
 
 @app.get("/api/admin/seed/quiz")
@@ -913,12 +957,19 @@ def seed_verify_words(data: dict, payload: dict = Depends(verify_token)):
 @app.get("/api/admin/seed/status")
 def seed_status(payload: dict = Depends(verify_token)):
     """Status seed admin: sudah ada belum / sudah diverifikasi belum."""
+    import database
+    conn = database.get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT must_change_password FROM admin WHERE username = ?", (payload["sub"],))
+    row = cur.fetchone()
+    conn.close()
     admin_data = get_admin_seed_data(payload["sub"])
     if not admin_data:
         raise HTTPException(400, "Data admin tidak ditemukan.")
     return {
         "has_seed": bool(admin_data["seed_hash"] and admin_data["mapping"]),
         "seed_verified": bool(admin_data["seed_verified"]),
+        "must_change_password": bool(row["must_change_password"]) if row else False,
     }
 
 @app.post("/api/admin/seed/challenge3")
@@ -957,7 +1008,7 @@ def seed_challenge3(payload: dict = Depends(verify_token)):
 
 @app.post("/api/admin/seed/verify3")
 def seed_verify3(data: dict, payload: dict = Depends(verify_token)):
-    """Cek jawaban quiz 3 kata. Cukup 3 jawaban benar → seed resmi terverifikasi."""
+    """Cek jawaban quiz 3 kata. Cukup 3 jawaban benar â†’ seed resmi terverifikasi."""
     import time
     challenge_id = data.get("challenge_id", "")
     answers = data.get("answers") or {}
@@ -1068,7 +1119,7 @@ def login_recovery(data: dict):
             }
     raise HTTPException(401, "Recovery key tidak ditemukan.")
 
-# ── Portfolio galeri (landing page) ─────────────────────────────────────────
+# â”€â”€ Portfolio galeri (landing page) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 from fastapi import UploadFile, File
 
 PORTFOLIO_DIR = os.path.join(os.path.dirname(__file__), "dashboard", "static", "img", "portfolio")
@@ -1086,7 +1137,7 @@ def portfolio_list():
         return []
 
 @app.post("/api/portfolio/upload")
-async def portfolio_upload(file: UploadFile = File(...), payload: dict = Depends(verify_token)):
+async def portfolio_upload(file: UploadFile = File(...), payload: dict = Depends(require_verified)):
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in PORTFOLIO_EXT:
         raise HTTPException(status_code=400, detail="Format harus jpg/png/gif/webp/mp4/webm")
@@ -1099,7 +1150,7 @@ async def portfolio_upload(file: UploadFile = File(...), payload: dict = Depends
     return {"ok": True, "name": name}
 
 @app.delete("/api/portfolio/{name}")
-def portfolio_delete(name: str, payload: dict = Depends(verify_token)):
+def portfolio_delete(name: str, payload: dict = Depends(require_verified)):
     if "/" in name or "\\" in name or ".." in name:
         raise HTTPException(status_code=400, detail="Nama file tidak valid")
     path = os.path.join(PORTFOLIO_DIR, name)
@@ -1107,3 +1158,18 @@ def portfolio_delete(name: str, payload: dict = Depends(verify_token)):
         raise HTTPException(status_code=404, detail="File tidak ditemukan")
     os.remove(path)
     return {"ok": True}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

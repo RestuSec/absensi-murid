@@ -37,6 +37,18 @@
   <div id="errTop" style="display:none" class="error-msg"></div>
   <div id="loadingMsg" style="text-align:center; padding:20px 0;">Memuat data keamanan&hellip;</div>
 
+  <!-- Langkah 0: GANTI PASSWORD (wajib kalau masih default) -->
+  <div id="step0" style="display:none;">
+    <div class="info-panel">
+      <strong>&#128272; Password bawaan belum diganti.</strong> Untuk keamanan, ganti dulu password admin kamu sebelum lanjut.
+    </div>
+    <input type="password" id="oldPw" placeholder="Password lama" style="width:100%; padding:10px; margin:8px 0;">
+    <input type="password" id="newPw" placeholder="Password baru (min. 8 karakter)" style="width:100%; padding:10px; margin:8px 0;">
+    <input type="password" id="newPw2" placeholder="Ulangi password baru" style="width:100%; padding:10px; margin:8px 0;">
+    <div id="pwResult" class="verify-result"></div>
+    <button class="btn-primary" id="pwBtn" type="button" style="width:100%;">Ganti Password &amp; Lanjut</button>
+  </div>
+
   <!-- Langkah 1: LIHAT SEED + KEY -->
   <div id="step1" style="display:none;">
     <div class="info-panel">

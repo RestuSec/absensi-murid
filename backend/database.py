@@ -137,10 +137,11 @@ def init_db():
             mapping TEXT,
             recovery_key_hash TEXT,
             seed_verified INTEGER DEFAULT 0,
+            must_change_password INTEGER DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now', 'localtime'))
         )
     """)
-    for col, decl in (("seed_hash","TEXT"),("mapping","TEXT"),("recovery_key_hash","TEXT"),("seed_verified","INTEGER")):
+    for col, decl in (("seed_hash","TEXT"),("mapping","TEXT"),("recovery_key_hash","TEXT"),("seed_verified","INTEGER"),("must_change_password","INTEGER")):
         cols = [r[1] for r in cur.execute("PRAGMA table_info(admin)").fetchall()]
         if col not in cols:
             cur.execute(f"ALTER TABLE admin ADD COLUMN {col} {decl}")
@@ -188,25 +189,36 @@ def seed_admin():
 
     conn = get_conn()
     cur = conn.cursor()
+    weak_passwords = {"admin", "password", "123456", "changeme", "12345", "qwerty"}
     for username, password, unit in admins:
         if not password:
             print(f"[DB] Password admin '{username}' kosong di .env, di-skip.")
             continue
-        cur.execute("SELECT id, password_hash FROM admin WHERE username = ?", (username,))
+        must_change = 1 if password.strip().lower() in weak_passwords else 0
+        cur.execute("SELECT id, password_hash, must_change_password FROM admin WHERE username = ?", (username,))
         row = cur.fetchone()
         if row:
+            pw_already_changed = bool(row["must_change_password"]) is False and row["must_change_password"] == 0
+            if pw_already_changed and not bcrypt.verify(password, row["password_hash"]):
+                # User sudah ganti password sendiri → .env jangan menimpa.
+                continue
             if not bcrypt.verify(password, row["password_hash"]):
                 hashed = bcrypt.hash(password)
                 cur.execute(
-                    "UPDATE admin SET password_hash = ? WHERE username = ?",
-                    (hashed, username)
+                    "UPDATE admin SET password_hash = ?, must_change_password = ? WHERE username = ?",
+                    (hashed, must_change, username)
                 )
-                print(f"[DB] Password admin '{username}' diperbarui.")
+                print(f"[DB] Password admin '{username}' diperbarui (dari .env).")
+            elif must_change:
+                cur.execute(
+                    "UPDATE admin SET must_change_password = ? WHERE username = ?",
+                    (must_change, username)
+                )
         else:
             hashed = bcrypt.hash(password)
             cur.execute(
-                "INSERT INTO admin (username, password_hash, unit) VALUES (?, ?, ?)",
-                (username, hashed, unit)
+                "INSERT INTO admin (username, password_hash, unit, must_change_password) VALUES (?, ?, ?, ?)",
+                (username, hashed, unit, must_change)
             )
             print(f"[DB] Admin '{username}' untuk unit {unit} dibuat.")
     conn.commit()
@@ -297,3 +309,12 @@ def clear_admin_seed(username: str):
     """, (username,))
     conn.commit()
     conn.close()
+
+def is_seed_verified(username: str) -> bool:
+    """True jika user admin sudah lulus verifikasi seed."""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT seed_verified FROM admin WHERE username = ?", (username,))
+    row = cur.fetchone()
+    conn.close()
+    return bool(row and row["seed_verified"])
