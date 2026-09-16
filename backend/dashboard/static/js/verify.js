@@ -68,23 +68,15 @@
       const h = document.createElement('h4');
       h.textContent = 'Kata ke-' + q.position;
       block.appendChild(h);
-      const row = document.createElement('div');
-      row.className = 'opt-row';
-      q.options.forEach(w => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'btn-secondary';
-        b.textContent = w;
-        b.dataset.word = w;
-        b.addEventListener('click', () => {
-          row.querySelectorAll('button').forEach(x => { x.classList.remove('btn-success'); x.classList.add('btn-secondary'); });
-          b.classList.remove('btn-secondary');
-          b.classList.add('btn-success');
-          selected[q.position] = w;
-        });
-        row.appendChild(b);
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.autocomplete = 'off';
+      inp.placeholder = 'Ketik kata di posisi ' + q.position + '...';
+      inp.dataset.position = q.position;
+      inp.addEventListener('input', () => {
+        selected[q.position] = inp.value.trim().toLowerCase();
       });
-      block.appendChild(row);
+      block.appendChild(inp);
       wrap.appendChild(block);
     });
   }
@@ -97,14 +89,6 @@
     document.getElementById('mappingOut').innerHTML =
       data.mapping.map(m => '<div><strong>' + m[0] + '</strong> &rarr; ' + esc(m[2]) + ' <small>(' + esc(m[1]) + ')</small></div>').join('');
     document.getElementById('recoveryOut').value = data.recovery_key;
-    showStep(1);
-  }
-
-  function showExisting(data) {
-    document.getElementById('seedPhraseOut').textContent = data.seed_phrase;
-    document.getElementById('mappingOut').innerHTML =
-      data.mapping.map(m => '<div><strong>' + m[0] + '</strong> &rarr; ' + esc(m[2]) + ' <small>(' + esc(m[1]) + ')</small></div>').join('');
-    document.getElementById('recoveryOut').value = '(sudah disimpan saat generate)';
     showStep(1);
   }
 
@@ -205,8 +189,7 @@
       } else if (data.seed_verified) {
         loadQuiz();
       } else if (data.has_seed) {
-        // Seed sudah ada → TAMPILKAN yang tersimpan, jangan generate baru.
-        showExisting(data);
+        loadQuiz();
       } else {
         generateAndShow();
       }

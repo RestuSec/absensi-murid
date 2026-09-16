@@ -967,23 +967,16 @@ def seed_status(payload: dict = Depends(verify_token)):
     if not admin_data:
         raise HTTPException(400, "Data admin tidak ditemukan.")
     has_seed = bool(admin_data["seed_hash"] and admin_data["mapping"])
-    seed_phrase = None
-    mapping = None
-    if has_seed:
-        seed_phrase = " ".join(m[1] for m in admin_data["mapping"])
-        mapping = [list(m) for m in admin_data["mapping"]]
     return {
         "has_seed": has_seed,
         "seed_verified": bool(admin_data["seed_verified"]),
         "must_change_password": bool(row["must_change_password"]) if row else False,
-        "seed_phrase": seed_phrase,
-        "mapping": mapping,
     }
 
 @app.post("/api/admin/seed/challenge3")
 def seed_challenge3(payload: dict = Depends(verify_token)):
-    """Quiz 3 kata ala wallet kripto (BIP-39): ambil 3 posisi acak dari seed,
-    masing-masing dibawa daftar kata campur (benar + pengecoh)."""
+    """Tantangan 3 kata: user mengetik kata seed di posisi acak.
+    Tidak mengirim pilihan — attacker tidak melihat kandidat."""
     import random as _random
     import uuid
     import time as _time
@@ -998,13 +991,7 @@ def seed_challenge3(payload: dict = Depends(verify_token)):
         raise HTTPException(400, "Belum ada seed. Generate dulu.")
     seed_words = [m[1] for m in admin_data["mapping"]]
     positions = _random.sample(range(12), 3)
-    questions = []
-    for pos in positions:
-        correct = seed_words[pos]
-        decoys = _random.sample([w for w in WORDLIST if w != correct], 5)
-        options = [correct] + decoys
-        _random.shuffle(options)
-        questions.append({"position": pos + 1, "options": options})
+    questions = [{"position": pos + 1} for pos in positions]
     challenge_id = str(uuid.uuid4())[:16]
     _temp_sessions[challenge_id] = {
         "username": payload["sub"],
